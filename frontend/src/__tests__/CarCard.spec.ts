@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Car } from '@/api/types'
 import CarCard from '@/components/CarCard.vue'
+import { formatPrice } from '@/utils/format'
 
 const car: Car = {
   id: 7,
@@ -36,6 +37,13 @@ describe('CarCard', () => {
     expect(wrapper.text()).toContain('Автомат')
     expect(wrapper.text()).toContain('5 мест')
     expect(wrapper.get('[data-test="price"]').text()).toBe('30 000 ₸')
+  })
+
+  it('shows the price for the selected term', () => {
+    const wrapper = mountCard({ days: 10 })
+    expect(wrapper.get('[data-test="price"]').text()).toBe(formatPrice(300000))
+    expect(wrapper.text()).toContain('за 10 дней')
+    expect(wrapper.text()).toContain(`${formatPrice(30000)} / сутки`)
   })
 
   it('renders lazy image with alt text', () => {

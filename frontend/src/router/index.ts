@@ -58,47 +58,28 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: 'about' },
       },
       {
+        path: 'rules',
+        name: 'rules',
+        component: () => import('@/views/RulesView.vue'),
+        meta: { title: 'rules' },
+      },
+      {
         path: 'contacts',
         name: 'contacts',
         component: () => import('@/views/ContactsView.vue'),
         meta: { title: 'contacts' },
       },
+    ],
+  },
+  {
+    path: '/admin/login',
+    component: () => import('@/layouts/DefaultLayout.vue'),
+    children: [
       {
-        path: 'login',
-        name: 'login',
-        component: () => import('@/views/LoginView.vue'),
-        meta: { title: 'login', guestOnly: true },
-      },
-      {
-        path: 'register',
-        name: 'register',
-        component: () => import('@/views/RegisterView.vue'),
-        meta: { title: 'register', guestOnly: true },
-      },
-      {
-        path: 'verify-email',
-        name: 'verify-email',
-        component: () => import('@/views/VerifyEmailView.vue'),
-        meta: { title: 'verify', requiresAuth: true },
-      },
-      {
-        path: 'account',
-        component: () => import('@/layouts/AccountLayout.vue'),
-        meta: { requiresAuth: true },
-        children: [
-          {
-            path: '',
-            name: 'account',
-            component: () => import('@/views/AccountView.vue'),
-            meta: { title: 'account' },
-          },
-          {
-            path: 'bookings',
-            name: 'account-bookings',
-            component: () => import('@/views/AccountBookingsView.vue'),
-            meta: { title: 'accountBookings' },
-          },
-        ],
+        path: '',
+        name: 'admin-login',
+        component: () => import('@/views/admin/AdminLoginView.vue'),
+        meta: { title: 'adminLogin', guestOnly: true },
       },
     ],
   },
@@ -170,11 +151,12 @@ export function createAppRouter() {
     const auth = useAuthStore()
     await auth.init()
 
+    // Вход есть только у администратора
     if (to.meta.requiresAuth && !auth.isAuthenticated) {
-      return { name: 'login', query: { redirect: to.fullPath } }
+      return { name: 'admin-login', query: { redirect: to.fullPath } }
     }
-    if (to.meta.guestOnly && auth.isAuthenticated) {
-      return { name: 'home' }
+    if (to.meta.guestOnly && auth.isAdmin) {
+      return { name: 'admin' }
     }
     if (to.meta.role === 'admin' && !auth.isAdmin) {
       return { name: 'home' }

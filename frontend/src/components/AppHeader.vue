@@ -1,22 +1,20 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
 import LangSwitch from '@/components/LangSwitch.vue'
 import { contacts } from '@/config/contacts'
-import { useAuthStore } from '@/stores/auth'
 import { formatPhoneHref } from '@/utils/format'
 
-const auth = useAuthStore()
 const route = useRoute()
-const router = useRouter()
 const { t } = useI18n()
 const menuOpen = ref(false)
 
 const links = [
   { to: { name: 'cars' }, label: 'common.fleet' },
   { to: { name: 'about' }, label: 'header.about' },
+  { to: { name: 'rules' }, label: 'header.rules' },
   { to: { name: 'contacts' }, label: 'header.contacts' },
 ] as const
 
@@ -26,11 +24,6 @@ watch(
     menuOpen.value = false
   },
 )
-
-function logout() {
-  auth.logout()
-  router.push({ name: 'home' })
-}
 </script>
 
 <template>
@@ -49,17 +42,6 @@ function logout() {
 
       <div class="header__actions">
         <a :href="formatPhoneHref(contacts.phone)" class="header__phone">{{ contacts.phone }}</a>
-        <template v-if="auth.isAuthenticated">
-          <RouterLink v-if="auth.isAdmin" :to="{ name: 'admin' }" class="btn btn--ghost btn--sm">
-            {{ t('header.admin') }}
-          </RouterLink>
-          <RouterLink :to="{ name: 'account-bookings' }" class="btn btn--outline btn--sm">
-            {{ t('header.account') }}
-          </RouterLink>
-        </template>
-        <RouterLink v-else :to="{ name: 'login' }" class="btn btn--outline btn--sm">
-          {{ t('common.login') }}
-        </RouterLink>
       </div>
 
       <LangSwitch class="header__lang" />
@@ -82,28 +64,6 @@ function logout() {
           <RouterLink v-for="link in links" :key="link.label" :to="link.to" class="mobile-menu__link">
             {{ t(link.label) }}
           </RouterLink>
-          <template v-if="auth.isAuthenticated">
-            <RouterLink :to="{ name: 'account-bookings' }" class="mobile-menu__link">
-              {{ t('common.myBookings') }}
-            </RouterLink>
-            <RouterLink :to="{ name: 'account' }" class="mobile-menu__link">
-              {{ t('common.profile') }}
-            </RouterLink>
-            <RouterLink v-if="auth.isAdmin" :to="{ name: 'admin' }" class="mobile-menu__link">
-              {{ t('header.adminPanel') }}
-            </RouterLink>
-            <button type="button" class="mobile-menu__link mobile-menu__logout" @click="logout">
-              {{ t('common.logout') }}
-            </button>
-          </template>
-          <template v-else>
-            <RouterLink :to="{ name: 'login' }" class="btn btn--outline btn--block">
-              {{ t('common.login') }}
-            </RouterLink>
-            <RouterLink :to="{ name: 'register' }" class="btn btn--gold btn--block">
-              {{ t('common.register') }}
-            </RouterLink>
-          </template>
         </nav>
       </div>
     </Transition>
@@ -122,8 +82,12 @@ function logout() {
   &__inner {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 12px;
     height: var(--header-height);
+
+    @include media(md) {
+      gap: 24px;
+    }
   }
 
   &__actions {
@@ -167,14 +131,15 @@ function logout() {
 
   &__mark {
     font-family: var(--font-display);
-    font-size: 1.5rem;
+    // На узких телефонах (320px) логотип, язык и бургер должны помещаться в одну строку
+    font-size: clamp(1.2rem, 6vw, 1.5rem);
     font-weight: 700;
     letter-spacing: 0.08em;
   }
 
   &__sub {
     color: var(--color-text-muted);
-    font-size: 0.8rem;
+    font-size: clamp(0.65rem, 3vw, 0.8rem);
     letter-spacing: 0.2em;
     text-transform: uppercase;
   }
@@ -212,7 +177,7 @@ function logout() {
   place-items: center;
   width: 44px;
   height: 44px;
-  margin-left: -12px; // gap шапки 24px слишком велик между языком и бургером
+  margin-right: -8px; // визуально выровнять три полоски по краю контейнера
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -296,17 +261,6 @@ function logout() {
     }
   }
 
-  &__logout {
-    background: none;
-    border: 0;
-    border-bottom: 1px solid var(--color-border);
-    font: inherit;
-    font-size: 1.1rem;
-    color: var(--color-danger);
-    text-align: left;
-    cursor: pointer;
-    margin-bottom: 8px;
-  }
 }
 
 .menu-enter-active,

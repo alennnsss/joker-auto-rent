@@ -4,13 +4,12 @@ import { useI18n } from 'vue-i18n'
 
 import type { CarSort, Category } from '@/api/types'
 import DateField from '@/components/DateField.vue'
-import { addDays, todayIso } from '@/utils/date'
-import { TRANSMISSIONS, transmissionLabel } from '@/utils/format'
+import { addDays, daysBetween, todayIso } from '@/utils/date'
 
 export interface FilterState {
   category_id: string
-  transmission: string
-  seats: string
+  /** Срок аренды в сутках — для расчёта цены в карточках */
+  days: string
   min_price: string
   max_price: string
   start_date: string
@@ -25,6 +24,8 @@ const emit = defineEmits<{ reset: [] }>()
 const { t } = useI18n()
 const expanded = ref(false)
 const today = todayIso()
+
+const TERMS = [1, 3, 7, 10, 30]
 const minEnd = computed(() => (filters.value.start_date ? addDays(filters.value.start_date, 1) : today))
 
 function update<K extends keyof FilterState>(key: K, value: FilterState[K]) {
@@ -33,6 +34,12 @@ function update<K extends keyof FilterState>(key: K, value: FilterState[K]) {
   if (key === 'start_date' && next.end_date && next.end_date <= String(value)) {
     next.end_date = addDays(String(value), 1)
   }
+  // Срок и даты согласованы: срок сдвигает дату возврата, даты задают срок
+  if (key === 'days' && next.start_date) {
+    next.end_date = addDays(next.start_date, Number(value))
+  } else if (next.start_date && next.end_date > next.start_date) {
+    next.days = String(daysBetween(next.start_date, next.end_date))
+  }
   filters.value = next
 }
 
@@ -40,8 +47,6 @@ const activeCount = computed(
   () =>
     [
       filters.value.category_id,
-      filters.value.transmission,
-      filters.value.seats,
       filters.value.min_price,
       filters.value.max_price,
       filters.value.start_date,
@@ -62,6 +67,23 @@ const activeCount = computed(
     </button>
 
     <div id="filters-body" class="filters__body" :class="{ 'is-open': expanded }">
+      <div class="field filters__terms">
+        <span id="f-term" class="field__label">{{ t('filters.term') }}</span>
+        <div class="terms" role="radiogroup" aria-labelledby="f-term">
+          <button
+            v-for="n in TERMS"
+            :key="n"
+            type="button"
+            role="radio"
+            class="terms__item"
+            :class="{ 'is-active': Number(filters.days || 1) === n }"
+            :aria-checked="Number(filters.days || 1) === n"
+            @click="update('days', String(n))"
+          >
+            {{ t('filters.termDays', n) }}
+          </button>
+        </div>
+      </div>
       <DateField
         id="f-start"
         :label="t('filters.start')"
@@ -86,32 +108,6 @@ const activeCount = computed(
         >
           <option value="">{{ t('filters.allCategories') }}</option>
           <option v-for="c in categories" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
-        </select>
-      </div>
-      <div class="field">
-        <label class="field__label" for="f-transmission">{{ t('filters.transmission') }}</label>
-        <select
-          id="f-transmission"
-          class="select"
-          :value="filters.transmission"
-          @change="update('transmission', ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="">{{ t('filters.anyTransmission') }}</option>
-          <option v-for="value in TRANSMISSIONS" :key="value" :value="value">
-            {{ transmissionLabel(value) }}
-          </option>
-        </select>
-      </div>
-      <div class="field">
-        <label class="field__label" for="f-seats">{{ t('filters.seats') }}</label>
-        <select
-          id="f-seats"
-          class="select"
-          :value="filters.seats"
-          @change="update('seats', ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="">{{ t('filters.anySeats') }}</option>
-          <option v-for="n in [4, 5, 7, 9]" :key="n" :value="String(n)">{{ n }}+</option>
         </select>
       </div>
       <div class="field filters__price">
@@ -193,7 +189,7 @@ const activeCount = computed(
 
   &__body {
     display: none;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0 16px;
     padding: 16px 8px 8px;
 
@@ -202,22 +198,26 @@ const activeCount = computed(
     }
 
     @include media(sm) {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     @include media(lg) {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       padding: 0;
     }
 
     @include media(xl) {
-      grid-template-columns: repeat(4, 1fr) 1.4fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr) minmax(0, 1fr) auto;
     }
 
     .field {
       margin-bottom: 12px;
     }
+  }
+
+  &__terms {
+    grid-column: 1 / -1;
   }
 
   &__range {
@@ -230,6 +230,39 @@ const activeCount = computed(
     display: flex;
     align-items: flex-end;
     padding-bottom: 12px;
+  }
+}
+
+.terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  &__item {
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface-2);
+    color: var(--color-text);
+    font: inherit;
+    cursor: pointer;
+
+    @include motion {
+      transition:
+        border-color var(--duration-fast) var(--ease),
+        background-color var(--duration-fast) var(--ease);
+    }
+
+    @include hover {
+      border-color: var(--color-gold-dark);
+    }
+
+    &.is-active {
+      border-color: var(--color-gold);
+      background: var(--color-gold-alpha);
+      color: var(--color-gold);
+    }
   }
 }
 </style>

@@ -21,6 +21,7 @@ const year = new Date().getFullYear()
         <h3 class="footer__title">{{ t('footer.sections') }}</h3>
         <RouterLink :to="{ name: 'cars' }">{{ t('common.fleet') }}</RouterLink>
         <RouterLink :to="{ name: 'about' }">{{ t('footer.aboutCompany') }}</RouterLink>
+        <RouterLink :to="{ name: 'rules' }">{{ t('footer.rules') }}</RouterLink>
         <RouterLink :to="{ name: 'contacts' }">{{ t('footer.contacts') }}</RouterLink>
       </nav>
 

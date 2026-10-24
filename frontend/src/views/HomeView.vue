@@ -81,7 +81,7 @@ function onSearch() {
   <section id="search" class="search container" aria-labelledby="search-title">
     <h2 id="search-title" class="visually-hidden">{{ t('home.searchTitle') }}</h2>
     <form class="search__form" @submit.prevent="onSearch">
-      <TripPanel v-model="trip" id-prefix="home" />
+      <TripPanel v-model="trip" single id-prefix="home" />
       <button type="submit" class="btn btn--gold search__submit" :disabled="!canSearch">
         {{ t('home.search') }}
       </button>
@@ -204,6 +204,12 @@ function onSearch() {
     @include media(md) {
       padding: 20px;
     }
+
+    // Один блок «Получение и возврат» и кнопка поиска — в одну строку
+    @include media(xl) {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+    }
   }
 
   &__submit {
@@ -212,6 +218,12 @@ function onSearch() {
     @include media(md) {
       justify-self: end;
       min-width: 280px;
+    }
+
+    @include media(xl) {
+      min-width: 240px;
+      // по нижнему краю полей ввода внутри карточки
+      margin-bottom: 21px;
     }
   }
 }
@@ -245,15 +257,15 @@ function onSearch() {
 .cars-grid {
   display: grid;
   gap: 20px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 
   @include media(md) {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   // 6 авто: 2×3 на планшете, 3×2 на десктопе
   @include media(lg) {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   &__skeleton {
@@ -269,7 +281,7 @@ function onSearch() {
   list-style: none;
 
   @include media(md) {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

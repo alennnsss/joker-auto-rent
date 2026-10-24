@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date
 
 from httpx import AsyncClient
 
@@ -75,22 +75,11 @@ async def test_image_upload_and_delete(
 async def test_booking_status_flow(
     client: AsyncClient,
     car: Car,
-    auth_headers: dict[str, str],
+    make_booking,
     admin_headers: dict[str, str],
     future: date,
 ) -> None:
-    created = await client.post(
-        "/api/v1/bookings",
-        headers=auth_headers,
-        json={
-            "car_id": car.id,
-            "pickup_location": "Офис",
-            "return_location": "Аэропорт",
-            "start_date": str(future),
-            "end_date": str(future + timedelta(days=2)),
-        },
-    )
-    booking_id = created.json()["id"]
+    booking_id = (await make_booking(car, future, 2)).id
     url = f"/api/v1/admin/bookings/{booking_id}/status"
 
     bad = await client.patch(url, headers=admin_headers, json={"status": "completed"})
@@ -110,21 +99,11 @@ async def test_booking_status_flow(
 async def test_cannot_delete_car_with_bookings(
     client: AsyncClient,
     car: Car,
-    auth_headers: dict[str, str],
+    make_booking,
     admin_headers: dict[str, str],
     future: date,
 ) -> None:
-    await client.post(
-        "/api/v1/bookings",
-        headers=auth_headers,
-        json={
-            "car_id": car.id,
-            "pickup_location": "Офис",
-            "return_location": "Аэропорт",
-            "start_date": str(future),
-            "end_date": str(future + timedelta(days=1)),
-        },
-    )
+    await make_booking(car, future, 1)
     response = await client.delete(f"/api/v1/admin/cars/{car.id}", headers=admin_headers)
     assert response.status_code == 409
 

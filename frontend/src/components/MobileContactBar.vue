@@ -36,7 +36,7 @@ const { t } = useI18n()
   inset: auto 0 0;
   z-index: 40;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 8px 16px calc(8px + var(--safe-bottom));
   background: var(--color-overlay);
@@ -49,6 +49,7 @@ const { t } = useI18n()
 
   .btn {
     min-height: 48px;
+    padding-inline: 12px;
   }
 }
 </style>

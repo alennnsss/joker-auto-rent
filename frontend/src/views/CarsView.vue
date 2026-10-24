@@ -3,12 +3,13 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter, type LocationQuery } from 'vue-router'
 
-import type { CarFilters as ApiFilters, CarSort, Transmission } from '@/api/types'
+import type { CarFilters as ApiFilters, CarSort } from '@/api/types'
 import CarCard from '@/components/CarCard.vue'
 import CarFilters, { type FilterState } from '@/components/CarFilters.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { PAGE_SIZE, useCarsStore } from '@/stores/cars'
 import { useBookingStore } from '@/stores/booking'
+import { daysBetween } from '@/utils/date'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,8 +24,7 @@ function fromQuery(query: LocationQuery): FilterState {
   const sort = str('sort') as CarSort
   return {
     category_id: str('category_id'),
-    transmission: str('transmission'),
-    seats: str('seats'),
+    days: str('days'),
     min_price: str('min_price'),
     max_price: str('max_price'),
     start_date: str('start_date'),
@@ -38,8 +38,6 @@ function toApi(state: FilterState): ApiFilters {
   const hasDates = Boolean(state.start_date && state.end_date && state.end_date > state.start_date)
   return {
     category_id: num(state.category_id),
-    transmission: (state.transmission || undefined) as Transmission | undefined,
-    seats: num(state.seats),
     min_price: num(state.min_price),
     max_price: num(state.max_price),
     start_date: hasDates ? state.start_date : undefined,
@@ -52,6 +50,12 @@ const filters = ref<FilterState>(fromQuery(route.query))
 
 const hasMore = computed(() => store.items.length < store.total)
 const datesSelected = computed(() => Boolean(toApi(filters.value).start_date))
+// Срок для цены в карточках: из выбранных дат, иначе из переключателя срока
+const termDays = computed(() => {
+  const api = toApi(filters.value)
+  if (api.start_date && api.end_date) return daysBetween(api.start_date, api.end_date)
+  return Math.max(1, Number(filters.value.days) || 1)
+})
 
 // Фильтры → URL (можно поделиться ссылкой, кнопка «назад» работает)
 watch(
@@ -114,6 +118,7 @@ function reset() {
         :car="car"
         :start-date="toApi(filters).start_date"
         :end-date="toApi(filters).end_date"
+        :days="termDays"
       />
       <template v-if="store.loading && !store.items.length">
         <div v-for="n in PAGE_SIZE / 2" :key="n" class="skeleton cars-grid__skeleton" />
@@ -147,18 +152,18 @@ function reset() {
 .cars-grid {
   display: grid;
   gap: 20px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 
   @include media(md) {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   @include media(lg) {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   @include media(xxl) {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   &__skeleton {

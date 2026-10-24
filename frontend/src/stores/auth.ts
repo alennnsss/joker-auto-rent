@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 
 import { authApi } from '@/api/auth'
 import { tokens } from '@/api/tokens'
-import type { RegisterPayload, TokenPair, User } from '@/api/types'
+import type { TokenPair, User } from '@/api/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -39,22 +39,6 @@ export const useAuthStore = defineStore('auth', () => {
     await applyTokens(await authApi.login(email, password))
   }
 
-  async function register(payload: RegisterPayload) {
-    await applyTokens(await authApi.register(payload))
-  }
-
-  async function updateProfile(payload: Partial<Pick<User, 'full_name' | 'phone'>>) {
-    user.value = await authApi.updateMe(payload)
-  }
-
-  async function verifyEmail(code: string) {
-    user.value = await authApi.verifyEmail(code)
-  }
-
-  async function resendVerification() {
-    await authApi.resendVerification()
-  }
-
   function logout() {
     tokens.clear()
     user.value = null
@@ -67,10 +51,6 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     init,
     login,
-    register,
-    updateProfile,
-    verifyEmail,
-    resendVerification,
     logout,
   }
 })

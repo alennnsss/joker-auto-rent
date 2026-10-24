@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { errorMessage } from '@/api/http'
 import PasswordInput from '@/components/PasswordInput.vue'
@@ -29,8 +29,13 @@ async function submit() {
   error.value = null
   try {
     await auth.login(email.value.trim(), password.value)
-    const target = redirectTarget()
-    await router.replace(target ?? (auth.isAdmin ? { name: 'admin' } : { name: 'account-bookings' }))
+    // Аккаунты остались только у администраторов; прочие учётки в админку не пускаем
+    if (!auth.isAdmin) {
+      auth.logout()
+      error.value = t('auth.notAdmin')
+      return
+    }
+    await router.replace(redirectTarget() ?? { name: 'admin' })
   } catch (e) {
     error.value = errorMessage(e)
   } finally {
@@ -68,10 +73,6 @@ async function submit() {
         {{ loading ? t('auth.loggingIn') : t('common.login') }}
       </button>
 
-      <p class="auth__alt muted">
-        {{ t('auth.noAccount') }}
-        <RouterLink :to="{ name: 'register', query: route.query }">{{ t('auth.signUp') }}</RouterLink>
-      </p>
     </form>
   </div>
 </template>

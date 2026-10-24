@@ -31,20 +31,10 @@ async def test_filter_requires_both_dates(client: AsyncClient, car: Car) -> None
 
 
 async def test_availability_filter_excludes_booked(
-    client: AsyncClient, car: Car, auth_headers: dict[str, str], future: date
+    client: AsyncClient, car: Car, make_booking, future: date
 ) -> None:
     end = future + timedelta(days=3)
-    await client.post(
-        "/api/v1/bookings",
-        headers=auth_headers,
-        json={
-            "car_id": car.id,
-            "pickup_location": "Офис",
-            "return_location": "Аэропорт",
-            "start_date": str(future),
-            "end_date": str(end),
-        },
-    )
+    await make_booking(car, future, 3)
     params = {"start_date": str(future + timedelta(days=1)), "end_date": str(end)}
     assert (await client.get("/api/v1/cars", params=params)).json()["total"] == 0
     # День возврата свободен

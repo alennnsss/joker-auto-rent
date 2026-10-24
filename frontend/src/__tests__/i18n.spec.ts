@@ -105,6 +105,6 @@ describe('components in Kazakh', () => {
     await wrapper.vm.$nextTick()
     expect(wrapper.text()).toContain('Жалға алу')
     expect(wrapper.text()).toContain('5 орын')
-    expect(wrapper.text()).toContain('/ тәулік')
+    expect(wrapper.text()).toContain('1 күн үшін')
   })
 })

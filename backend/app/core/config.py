@@ -18,17 +18,6 @@ class Settings(BaseSettings):
     currency: str = "KZT"
     timezone: str = "Asia/Almaty"
     media_dir: str = "media"
-    # Почта для кодов подтверждения. Пустой SMTP_HOST — письма пишутся в лог
-    smtp_host: str = ""
-    smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_password: str = ""
-    smtp_from: str = "Joker Auto Rent <no-reply@joker.kz>"
-    smtp_tls: bool = True
-    email_code_ttl_min: int = 15
-    email_resend_cooldown_sec: int = 60
-    email_code_max_attempts: int = 5
-    max_booking_days: int = 90
 
     @field_validator("database_url")
     @classmethod

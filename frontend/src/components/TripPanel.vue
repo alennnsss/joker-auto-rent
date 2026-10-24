@@ -14,9 +14,11 @@ const props = withDefaults(
     disabledDays?: string[]
     /** Вертикальная раскладка для узких колонок (карточка авто, бронирование). */
     compact?: boolean
+    /** Один блок «Получение и возврат»: одно место и одно время для обеих точек. */
+    single?: boolean
     idPrefix?: string
   }>(),
-  { disabledDays: () => [], compact: false, idPrefix: 'trip' },
+  { disabledDays: () => [], compact: false, single: false, idPrefix: 'trip' },
 )
 
 const trip = defineModel<Trip>({ required: true })
@@ -44,6 +46,20 @@ const returnLocation = field('returnLocation')
 const returnDate = field('returnDate')
 const returnTime = field('returnTime')
 
+// Режим single: место и время общие — пишем сразу в обе точки
+const sharedLocation = computed({
+  get: () => trip.value.pickupLocation,
+  set: (value: string) => {
+    trip.value = { ...trip.value, pickupLocation: value, returnLocation: value }
+  },
+})
+const sharedTime = computed({
+  get: () => trip.value.pickupTime,
+  set: (value: string) => {
+    trip.value = { ...trip.value, pickupTime: value, returnTime: value }
+  },
+})
+
 const minReturn = computed(() => (trip.value.pickupDate ? addDays(trip.value.pickupDate, 1) : today))
 const id = (name: string) => `${props.idPrefix}-${name}`
 
@@ -57,7 +73,38 @@ function swapLocations() {
 </script>
 
 <template>
-  <div class="trip" :class="{ 'trip--compact': compact }">
+  <div v-if="single" class="trip trip--single">
+    <fieldset class="trip__card">
+      <legend class="trip__legend">
+        <span class="trip__dot" aria-hidden="true" />{{ t('trip.together') }}
+      </legend>
+      <div class="trip__fields">
+        <LocationSelect :id="id('location')" v-model="sharedLocation" :label="t('common.place')" />
+        <DateField
+          :id="id('pickup-date')"
+          v-model="pickupDate"
+          :label="t('trip.pickupDate')"
+          :min="today"
+          :disabled-days="disabledDays"
+        />
+        <DateField
+          :id="id('return-date')"
+          v-model="returnDate"
+          :label="t('trip.returnDate')"
+          :min="minReturn"
+          :disabled-days="disabledDays"
+        />
+        <div class="field">
+          <label class="field__label" :for="id('time')">{{ t('common.time') }}</label>
+          <select :id="id('time')" v-model="sharedTime" class="select">
+            <option v-for="t in TIMES" :key="t" :value="t">{{ t }}</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+
+  <div v-else class="trip" :class="{ 'trip--compact': compact }">
     <fieldset class="trip__card">
       <legend class="trip__legend">
         <span class="trip__dot" aria-hidden="true" />{{ t('common.pickup') }}
@@ -137,7 +184,8 @@ function swapLocations() {
   gap: 12px;
   align-items: center;
 
-  &:not(.trip--compact) {
+  // Две карточки с кнопкой обмена между ними; в режиме single карточка одна — на всю ширину
+  &:not(.trip--compact, .trip--single) {
     @include media(xl) {
       grid-template-columns: 1fr auto 1fr;
       gap: 20px;
@@ -216,6 +264,24 @@ function swapLocations() {
 
     &:active {
       transform: scale(0.95);
+    }
+  }
+
+  &--single &__fields {
+    @include media(sm) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+
+      > :first-child {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @include media(lg) {
+      grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)) minmax(0, 0.8fr);
+
+      > :first-child {
+        grid-column: auto;
+      }
     }
   }
 

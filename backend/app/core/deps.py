@@ -1,11 +1,10 @@
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
-from app.core.i18n import Lang, parse_lang
 from app.core.security import decode_token
 from app.db.session import get_db
 from app.models import User, UserRole
@@ -14,14 +13,6 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 AppSettings = Annotated[Settings, Depends(get_settings)]
-
-
-def get_lang(accept_language: Annotated[str | None, Header()] = None) -> Lang:
-    """Язык интерфейса из Accept-Language (фронтенд присылает ru или kk)."""
-    return parse_lang(accept_language)
-
-
-RequestLang = Annotated[Lang, Depends(get_lang)]
 
 
 async def get_current_user(

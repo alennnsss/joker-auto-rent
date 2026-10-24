@@ -7,14 +7,20 @@ import type { Car } from '@/api/types'
 import CarPicture from '@/components/CarPicture.vue'
 import { formatPrice, fuelLabel, transmissionLabel } from '@/utils/format'
 
-const props = defineProps<{
-  car: Car
-  startDate?: string
-  endDate?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    car: Car
+    startDate?: string
+    endDate?: string
+    /** Срок аренды в сутках: цена показывается за весь срок */
+    days?: number
+  }>(),
+  { startDate: undefined, endDate: undefined, days: 1 },
+)
 
 const { t } = useI18n()
 const title = computed(() => `${props.car.brand} ${props.car.model}`)
+const total = computed(() => Number(props.car.price_per_day) * props.days)
 const query = computed(() =>
   props.startDate && props.endDate ? { start: props.startDate, end: props.endDate } : undefined,
 )
@@ -78,8 +84,11 @@ const specs = computed(() => [
 
     <footer class="car-card__footer">
       <p class="car-card__price">
-        <span class="car-card__amount" data-test="price">{{ formatPrice(car.price_per_day) }}</span>
-        <span class="muted">{{ t('common.perDay') }}</span>
+        <span class="car-card__amount" data-test="price">{{ formatPrice(total) }}</span>
+        <span class="muted">{{ t('carCard.forTerm', { term: t('filters.termDays', days) }) }}</span>
+        <span v-if="days > 1" class="car-card__per-day muted">
+          {{ formatPrice(car.price_per_day) }} {{ t('common.perDay') }}
+        </span>
       </p>
       <RouterLink
         :to="{ name: 'car-detail', params: { id: car.id }, query }"
@@ -155,6 +164,7 @@ const specs = computed(() => [
 
   &__footer {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
@@ -163,10 +173,16 @@ const specs = computed(() => [
 
   &__price {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     gap: 4px;
     margin: 0;
     font-size: 0.875rem;
+  }
+
+  &__per-day {
+    flex-basis: 100%;
+    font-size: 0.8rem;
   }
 
   &__amount {

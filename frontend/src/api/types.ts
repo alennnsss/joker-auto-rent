@@ -23,13 +23,6 @@ export interface User {
   created_at: string
 }
 
-export interface RegisterPayload {
-  email: string
-  password: string
-  full_name: string
-  phone: string
-}
-
 export interface Category {
   id: number
   name: string
@@ -112,16 +105,6 @@ export interface Booking {
 
 export interface AdminBooking extends Booking {
   user: User
-}
-
-export interface BookingPayload {
-  car_id: number
-  start_date: string
-  end_date: string
-  pickup_location: string
-  return_location: string
-  pickup_time: string
-  return_time: string
 }
 
 export interface CarPayload {

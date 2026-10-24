@@ -1,7 +1,6 @@
 import os
-import re
 from collections.abc import AsyncIterator
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from decimal import Decimal
 
 # Тесты по умолчанию идут на SQLite; для проверки на PostgreSQL задайте TEST_DATABASE_URL
@@ -18,8 +17,7 @@ from app.core.security import hash_password
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
-from app.models import Car, CarCategory, Fuel, Transmission, User, UserRole
-from app.services import email as email_service
+from app.models import Booking, Car, CarCategory, Fuel, Transmission, User, UserRole
 from app.services.bookings import today
 
 
@@ -74,57 +72,30 @@ async def car(db: AsyncSession) -> Car:
     return car
 
 
-async def register_user(
-    client: AsyncClient, outbox: list[dict[str, str]], email: str, *, verify: bool = True
-) -> dict[str, str]:
-    response = await client.post(
-        "/api/v1/auth/register",
-        json={
-            "email": email,
-            "password": "password123",
-            "full_name": "Тест Тестов",
-            "phone": "87011234567",
-        },
+async def login_headers(client: AsyncClient, email: str, password: str) -> dict[str, str]:
+    response = await client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200, response.text
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+@pytest.fixture
+async def client_user(db: AsyncSession) -> User:
+    """Пользователь без прав администратора (например, созданный до отказа от аккаунтов)."""
+    user = User(
+        email="client@example.com",
+        full_name="Тест Тестов",
+        phone="+7 (701) 123-45-67",
+        password_hash=hash_password("password123"),
+        email_verified=True,
     )
-    assert response.status_code == 201, response.text
-    headers = {"Authorization": f"Bearer {response.json()['access_token']}"}
-    if verify:
-        code = last_code(outbox, email)
-        verified = await client.post(
-            "/api/v1/auth/verify-email", headers=headers, json={"code": code}
-        )
-        assert verified.status_code == 200, verified.text
-    return headers
-
-
-def last_code(outbox: list[dict[str, str]], email: str) -> str:
-    """Код подтверждения из последнего письма на адрес email."""
-    body = next(m["body"] for m in reversed(outbox) if m["to"] == email)
-    match = re.search(r"\b(\d{6})\b", body)
-    assert match, body
-    return match.group(1)
-
-
-@pytest.fixture(autouse=True)
-def outbox(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, str]]:
-    """Перехватывает письма вместо отправки по SMTP."""
-    sent: list[dict[str, str]] = []
-
-    async def fake_send(settings, to: str, subject: str, body: str) -> None:
-        sent.append({"to": to, "subject": subject, "body": body})
-
-    monkeypatch.setattr(email_service, "send_email", fake_send)
-    return sent
+    db.add(user)
+    await db.commit()
+    return user
 
 
 @pytest.fixture
-async def auth_headers(client: AsyncClient, outbox: list[dict[str, str]]) -> dict[str, str]:
-    return await register_user(client, outbox, "client@example.com")
-
-
-@pytest.fixture
-async def other_headers(client: AsyncClient, outbox: list[dict[str, str]]) -> dict[str, str]:
-    return await register_user(client, outbox, "other@example.com")
+async def auth_headers(client: AsyncClient, client_user: User) -> dict[str, str]:
+    return await login_headers(client, "client@example.com", "password123")
 
 
 @pytest.fixture
@@ -140,13 +111,33 @@ async def admin_headers(client: AsyncClient, db: AsyncSession) -> dict[str, str]
         )
     )
     await db.commit()
-    response = await client.post(
-        "/api/v1/auth/login", json={"email": "admin@example.com", "password": "adminpass1"}
-    )
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+    return await login_headers(client, "admin@example.com", "adminpass1")
 
 
 @pytest.fixture
 def future() -> date:
     """Дата через неделю в часовом поясе Алматы."""
     return today(get_settings()) + timedelta(days=7)
+
+
+@pytest.fixture
+def make_booking(db: AsyncSession, client_user: User):
+    """Создаёт бронь напрямую в БД: клиентского API бронирования больше нет."""
+
+    async def _make(car: Car, start: date, days: int) -> Booking:
+        booking = Booking(
+            user_id=client_user.id,
+            car_id=car.id,
+            start_date=start,
+            end_date=start + timedelta(days=days),
+            pickup_location="Офис",
+            return_location="Аэропорт",
+            pickup_time=time(10, 0),
+            return_time=time(10, 0),
+            total_price=car.price_per_day * days,
+        )
+        db.add(booking)
+        await db.commit()
+        return booking
+
+    return _make
