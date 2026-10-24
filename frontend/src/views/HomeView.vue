@@ -3,8 +3,8 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
-import { Analytics } from "@vercel/analytics/next"
-
+// 1. Импортируем функцию inject из правильного пакета
+import { inject } from '@vercel/analytics' 
 import { carsApi } from '@/api/cars'
 import type { Car } from '@/api/types'
 import BenefitCards from '@/components/BenefitCards.vue'
@@ -20,6 +20,7 @@ const { trip } = storeToRefs(useBookingStore())
 
 const featured = ref<Car[]>([])
 const featuredLoading = ref(true)
+
 const canSearch = computed(
   () => Boolean(trip.value.pickupDate && trip.value.returnDate > trip.value.pickupDate),
 )
@@ -36,6 +37,9 @@ const steps = [
 ] as const
 
 onMounted(async () => {
+  // 2. Инициализируем аналитику при монтировании компонента
+  inject() 
+
   try {
     featured.value = (await carsApi.list({ limit: 6, sort: 'price_desc' })).items
   } catch {
@@ -53,6 +57,7 @@ function onSearch() {
   })
 }
 </script>
+
 
 <template>
   <section class="hero">
@@ -138,7 +143,6 @@ function onSearch() {
       <RouterLink :to="{ name: 'cars' }" class="btn btn--gold">{{ t('common.chooseCar') }}</RouterLink>
     </div>
   </section>
-  <Analytics />
 </template>
 
 <style scoped lang="scss">
