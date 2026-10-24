@@ -68,14 +68,13 @@ onMounted(load)
           <th>{{ t('adminCars.category') }}</th>
           <th>{{ t('adminCars.gearbox') }}</th>
           <th>{{ t('adminCars.price') }}</th>
-          <th>{{ t('adminCars.deposit') }}</th>
           <th>{{ t('adminCars.onSite') }}</th>
           <th><span class="visually-hidden">{{ t('common.actions') }}</span></th>
         </tr>
       </thead>
       <tbody>
         <tr v-if="loading">
-          <td colspan="8" class="muted">{{ t('common.loading') }}</td>
+          <td colspan="7" class="muted">{{ t('common.loading') }}</td>
         </tr>
         <tr v-for="car in cars" v-else :key="car.id">
           <td>
@@ -92,7 +91,6 @@ onMounted(load)
           <td>{{ car.category.name }}</td>
           <td>{{ transmissionLabel(car.transmission) }}</td>
           <td>{{ formatPrice(car.price_per_day) }}</td>
-          <td>{{ formatPrice(car.deposit) }}</td>
           <td>
             <label class="checkbox">
               <input type="checkbox" :checked="car.is_active" @change="toggleActive(car)" />

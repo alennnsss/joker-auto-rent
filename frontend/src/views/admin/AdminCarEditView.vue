@@ -34,6 +34,7 @@ const form = reactive<CarPayload>({
   fuel: 'petrol',
   seats: 5,
   price_per_day: '',
+  // Работаем без залога: поле в БД осталось, всегда сохраняем 0
   deposit: '0',
   description: '',
   is_active: true,
@@ -50,7 +51,7 @@ function fill(c: Car) {
     fuel: c.fuel,
     seats: c.seats,
     price_per_day: String(Number(c.price_per_day)),
-    deposit: String(Number(c.deposit)),
+    deposit: '0',
     description: c.description,
     is_active: c.is_active,
   })
@@ -197,19 +198,6 @@ async function removeImage(imageId: number) {
             class="input"
             type="number"
             min="1"
-            step="any"
-            inputmode="decimal"
-            required
-          />
-        </div>
-        <div class="field">
-          <label class="field__label" for="c-deposit">{{ t('adminCarEdit.deposit') }}</label>
-          <input
-            id="c-deposit"
-            v-model="form.deposit"
-            class="input"
-            type="number"
-            min="0"
             step="any"
             inputmode="decimal"
             required

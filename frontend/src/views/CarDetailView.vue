@@ -52,7 +52,6 @@ const specs = computed(() => {
     { label: t('carDetail.transmission'), value: transmissionLabel(car.value.transmission) },
     { label: t('carDetail.fuel'), value: fuelLabel(car.value.fuel) },
     { label: t('carDetail.seats'), value: String(car.value.seats) },
-    { label: t('carDetail.deposit'), value: formatPrice(car.value.deposit) },
   ]
 })
 
@@ -186,9 +185,6 @@ function bookViaWhatsapp() {
                 <span>{{ formatDays(availability.days ?? 0) }}</span>
                 <strong>{{ formatPrice(availability.total_price) }}</strong>
               </div>
-              <p class="muted booking__note">
-                {{ t('carDetail.depositNote', { amount: formatPrice(car.deposit) }) }}
-              </p>
             </template>
             <div v-else-if="availability?.available === false" class="alert alert--error">
               {{ t('carDetail.busyAlert') }}
