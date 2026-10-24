@@ -1,0 +1,87 @@
+// Единственное место, где задаются цвета и брейкпоинты.
+// В компонентах цвета — только через var(--color-*).
+
+// Брейкпоинты (mobile-first, используются через @include media(md))
+$bp-sm: 576px; // большие телефоны
+$bp-md: 768px; // планшеты
+$bp-lg: 1024px; // ноутбуки
+$bp-xl: 1280px; // десктоп
+$bp-xxl: 1536px; // большие экраны
+
+$breakpoints: (
+  sm: $bp-sm,
+  md: $bp-md,
+  lg: $bp-lg,
+  xl: $bp-xl,
+  xxl: $bp-xxl,
+);
+
+$container-max: 1360px;
+$header-height: 64px;
+$mobile-bar-height: 64px;
+
+// Выводится один раз в main.scss
+@mixin theme-custom-properties {
+  :root {
+    --color-bg: #0b0b0b; // основной фон
+    --color-surface: #161616; // карточки, шапка
+    --color-surface-2: #1f1f1f; // ховеры, инпуты
+    --color-gold: #d4af37; // основной акцент
+    --color-gold-light: #f1d27a; // ховер / градиент
+    --color-gold-dark: #a8862a; // нажатие / границы
+    --color-text: #f5f5f5;
+    --color-text-muted: #a3a3a3;
+    --color-border: #2a2a2a;
+    --color-danger: #e5484d;
+    --color-success: #3fb950;
+    --color-on-gold: #0b0b0b; // текст на золотом фоне
+    --color-overlay: rgb(11 11 11 / 72%);
+    --color-gold-alpha: rgb(212 175 55 / 12%);
+    --color-danger-alpha: rgb(229 72 77 / 12%);
+    --color-success-alpha: rgb(63 185 80 / 12%);
+    --gradient-gold: linear-gradient(135deg, #a8862a 0%, #d4af37 50%, #f1d27a 100%);
+    --gradient-hero: linear-gradient(180deg, rgb(11 11 11 / 35%) 0%, #0b0b0b 92%);
+    --gradient-hero-side: linear-gradient(90deg, rgb(11 11 11 / 85%) 0%, rgb(11 11 11 / 0%) 70%);
+
+    // Палитры для темы PrimeVue (src/styles/primevue.ts ссылается на эти переменные)
+    --gold-50: #fbf7e9;
+    --gold-100: #f6edc8;
+    --gold-200: #f1d27a;
+    --gold-300: #e6c25a;
+    --gold-400: #dbb743;
+    --gold-500: #d4af37;
+    --gold-600: #a8862a;
+    --gold-700: #876b22;
+    --gold-800: #65501a;
+    --gold-900: #443611;
+    --gold-950: #221b09;
+    --neutral-0: #ffffff;
+    --neutral-50: #f5f5f5;
+    --neutral-100: #e5e5e5;
+    --neutral-200: #c7c7c7;
+    --neutral-300: #a3a3a3;
+    --neutral-400: #7a7a7a;
+    --neutral-500: #555555;
+    --neutral-600: #3a3a3a;
+    --neutral-700: #2a2a2a;
+    --neutral-800: #1f1f1f;
+    --neutral-900: #161616;
+    --neutral-950: #0b0b0b;
+
+    --font-display: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-body: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+    --radius-sm: 8px;
+    --radius: 14px;
+    --radius-lg: 20px;
+    --shadow: 0 12px 32px rgb(0 0 0 / 45%);
+
+    --duration-fast: 150ms;
+    --duration: 250ms;
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+
+    --header-height: #{$header-height};
+    --mobile-bar-height: #{$mobile-bar-height};
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
