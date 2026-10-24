@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
+import { Analytics } from "@vercel/analytics/next"
 
 import { carsApi } from '@/api/cars'
 import type { Car } from '@/api/types'
@@ -137,6 +138,7 @@ function onSearch() {
       <RouterLink :to="{ name: 'cars' }" class="btn btn--gold">{{ t('common.chooseCar') }}</RouterLink>
     </div>
   </section>
+  <Analytics />
 </template>
 
 <style scoped lang="scss">

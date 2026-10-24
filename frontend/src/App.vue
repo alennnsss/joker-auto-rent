@@ -3,7 +3,6 @@ import { usePrimeVue } from 'primevue/config'
 import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterView, useRoute } from 'vue-router'
-
 import type { Locale } from '@/i18n'
 import { applyTitle } from '@/router'
 import { primeLocales } from '@/styles/primevue'

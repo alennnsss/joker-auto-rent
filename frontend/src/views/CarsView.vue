@@ -148,9 +148,10 @@ function reset() {
   min-height: 1.6em;
   margin-bottom: 16px;
 }
-
 .cars-grid {
   display: grid;
+  width: 100%;
+  min-width: 0;
   gap: 20px;
   grid-template-columns: minmax(0, 1fr);
 
@@ -166,11 +167,15 @@ function reset() {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   &__skeleton {
     aspect-ratio: 4 / 5;
   }
 }
-
 .more {
   display: flex;
   justify-content: center;
