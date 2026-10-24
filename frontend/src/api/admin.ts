@@ -7,7 +7,6 @@ import type {
   CarList,
   CarPayload,
   Category,
-  Payment,
   User,
 } from './types'
 
@@ -61,10 +60,6 @@ export const adminApi = {
   },
   async users() {
     const { data } = await http.get<User[]>('/admin/users', { params: { limit: 200 } })
-    return data
-  },
-  async payments() {
-    const { data } = await http.get<Payment[]>('/admin/payments', { params: { limit: 200 } })
     return data
   },
 }

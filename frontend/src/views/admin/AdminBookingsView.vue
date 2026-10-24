@@ -108,17 +108,16 @@ onMounted(load)
           <th>{{ t('adminBookings.car') }}</th>
           <th>{{ t('adminBookings.dates') }}</th>
           <th>{{ t('adminBookings.sum') }}</th>
-          <th>{{ t('adminBookings.payment') }}</th>
           <th>{{ t('adminBookings.status') }}</th>
           <th><span class="visually-hidden">{{ t('common.actions') }}</span></th>
         </tr>
       </thead>
       <tbody>
         <tr v-if="loading">
-          <td colspan="8" class="muted">{{ t('common.loading') }}</td>
+          <td colspan="7" class="muted">{{ t('common.loading') }}</td>
         </tr>
         <tr v-else-if="!bookings.length">
-          <td colspan="8" class="muted">{{ t('adminBookings.empty') }}</td>
+          <td colspan="7" class="muted">{{ t('adminBookings.empty') }}</td>
         </tr>
         <tr v-for="b in bookings" v-else :key="b.id">
           <td>{{ b.id }}</td>
@@ -138,10 +137,6 @@ onMounted(load)
             </span>
           </td>
           <td>{{ formatPrice(b.total_price) }}</td>
-          <td>
-            {{ b.payment_method === 'cash' ? t('adminBookings.cash') : t('adminBookings.online') }}
-            <span v-if="b.is_paid" class="paid">{{ t('adminBookings.paid') }}</span>
-          </td>
           <td><StatusBadge kind="booking" :status="b.status" /></td>
           <td class="actions">
             <button
@@ -201,7 +196,4 @@ onMounted(load)
   font-size: 0.85rem;
 }
 
-.paid {
-  color: var(--color-success);
-}
 </style>

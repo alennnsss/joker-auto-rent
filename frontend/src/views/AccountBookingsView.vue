@@ -36,14 +36,8 @@ function canCancel(b: Booking) {
   return b.status === 'pending' || b.status === 'confirmed'
 }
 
-function canPay(b: Booking) {
-  return b.payment_method === 'online' && b.status === 'pending' && !b.is_paid
-}
-
 async function cancel(b: Booking) {
-  const question = t('myBookings.confirmCancel', { id: b.id })
-  const refund = b.is_paid ? ` ${t('myBookings.refundNote')}` : ''
-  if (!window.confirm(question + refund)) return
+  if (!window.confirm(t('myBookings.confirmCancel', { id: b.id }))) return
   busyId.value = b.id
   error.value = null
   try {
@@ -119,27 +113,8 @@ async function cancel(b: Booking) {
             </div>
           </dl>
 
-          <p class="item__price">
-            {{ formatPrice(b.total_price) }}
-            <span class="muted">
-              ·
-              {{
-                b.payment_method === 'cash'
-                  ? t('myBookings.cashPay')
-                  : b.is_paid
-                    ? t('myBookings.paidOnline')
-                    : t('myBookings.unpaidOnline')
-              }}
-            </span>
-          </p>
+          <p class="item__price">{{ formatPrice(b.total_price) }}</p>
           <div class="item__actions">
-            <RouterLink
-              v-if="canPay(b)"
-              :to="{ name: 'payment', params: { bookingId: b.id } }"
-              class="btn btn--gold btn--sm"
-            >
-              {{ t('myBookings.pay') }}
-            </RouterLink>
             <button
               v-if="canCancel(b)"
               type="button"

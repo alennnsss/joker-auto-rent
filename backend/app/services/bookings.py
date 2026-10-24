@@ -8,17 +8,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
-from app.models import (
-    Booking,
-    BookingStatus,
-    Car,
-    PaymentMethod,
-    PaymentStatus,
-    User,
-)
+from app.models import Booking, BookingStatus, Car, User
 from app.schemas.booking import BookingCreate
 from app.services.cars import overlap_clause
-from app.services.payments import PaymentProvider
 
 USER_CANCELLABLE = {BookingStatus.PENDING, BookingStatus.CONFIRMED}
 
@@ -78,12 +70,9 @@ async def create_booking(
     db: AsyncSession,
     user: User,
     data: BookingCreate,
-    provider: PaymentProvider,
     settings: Settings,
 ) -> Booking:
     validate_dates(data.start_date, data.end_date, settings)
-    if data.payment_method == PaymentMethod.ONLINE and not provider.supports_online:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Онлайн-оплата пока недоступна")
 
     if not user.email_verified:
         raise HTTPException(
@@ -108,7 +97,6 @@ async def create_booking(
         return_time=data.return_time,
         # Цена считается только на сервере
         total_price=calculate_price(car.price_per_day, data.start_date, data.end_date),
-        payment_method=data.payment_method,
         status=BookingStatus.PENDING,
     )
     db.add(booking)
@@ -135,28 +123,20 @@ async def list_all_bookings(
     return list(await db.scalars(stmt))
 
 
-async def _cancel(db: AsyncSession, booking: Booking, provider: PaymentProvider) -> Booking:
-    for payment in booking.payments:
-        if payment.status == PaymentStatus.SUCCEEDED:
-            await provider.refund(payment)
-            payment.status = PaymentStatus.REFUNDED
+async def _cancel(db: AsyncSession, booking: Booking) -> Booking:
     booking.status = BookingStatus.CANCELLED
     await db.commit()
     return await get_booking(db, booking.id)
 
 
-async def cancel_by_user(
-    db: AsyncSession, booking_id: int, user: User, provider: PaymentProvider
-) -> Booking:
+async def cancel_by_user(db: AsyncSession, booking_id: int, user: User) -> Booking:
     booking = await get_booking(db, booking_id, user)
     if booking.status not in USER_CANCELLABLE:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Эту бронь уже нельзя отменить")
-    return await _cancel(db, booking, provider)
+    return await _cancel(db, booking)
 
 
-async def change_status(
-    db: AsyncSession, booking_id: int, new_status: BookingStatus, provider: PaymentProvider
-) -> Booking:
+async def change_status(db: AsyncSession, booking_id: int, new_status: BookingStatus) -> Booking:
     booking = await get_booking(db, booking_id)
     if new_status not in ADMIN_TRANSITIONS[booking.status]:
         raise HTTPException(
@@ -164,7 +144,7 @@ async def change_status(
             f"Нельзя перевести бронь из статуса «{booking.status}» в «{new_status}»",
         )
     if new_status == BookingStatus.CANCELLED:
-        return await _cancel(db, booking, provider)
+        return await _cancel(db, booking)
     booking.status = new_status
     await db.commit()
     return await get_booking(db, booking.id)

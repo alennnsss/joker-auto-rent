@@ -6,39 +6,38 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
-from app.services.payments import get_payment_provider
+from app.core.i18n import parse_lang, translate, validation_detail
 
-VALIDATION_MESSAGES = {
-    "missing": "обязательное поле",
-    "string_too_short": "слишком короткое значение",
-    "string_too_long": "слишком длинное значение",
-    "value_error": "некорректное значение",
-    "date_from_datetime_parsing": "некорректная дата",
-    "date_parsing": "некорректная дата",
-    "int_parsing": "ожидается целое число",
-    "decimal_parsing": "ожидается число",
-    "enum": "недопустимое значение",
-    "greater_than": "значение слишком маленькое",
-    "greater_than_equal": "значение слишком маленькое",
-    "less_than_equal": "значение слишком большое",
-}
+
+async def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, StarletteHTTPException)
+    # detail из сервисов — на русском, переводим на язык интерфейса
+    detail = exc.detail
+    if isinstance(detail, str):
+        detail = translate(detail, parse_lang(request.headers.get("accept-language")))
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": detail},
+        headers=getattr(exc, "headers", None),
+    )
 
 
 async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, RequestValidationError)
+    lang = parse_lang(request.headers.get("accept-language"))
     errors = exc.errors()
     first = errors[0] if errors else {}
     message = str(first.get("msg", ""))
     if first.get("type") == "value_error" and message.startswith("Value error, "):
-        # Сообщение из нашего валидатора — уже на русском
-        detail = message.removeprefix("Value error, ")
+        # Сообщение из нашего валидатора — на русском, переводим по словарю
+        detail = translate(message.removeprefix("Value error, "), lang)
     else:
-        field = ".".join(str(p) for p in first.get("loc", ())[1:]) or "запрос"
-        reason = VALIDATION_MESSAGES.get(str(first.get("type")), "некорректное значение")
-        detail = f"Поле «{field}»: {reason}"
+        field = ".".join(str(p) for p in first.get("loc", ())[1:])
+        detail = validation_detail(field, str(first.get("type")), lang)
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content={"detail": detail, "errors": jsonable_encoder(errors)},
@@ -47,8 +46,6 @@ async def validation_exception_handler(request: Request, exc: Exception) -> JSON
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    # Падаем на старте, если провайдер оплаты не настроен (или mock в production)
-    get_payment_provider()
 
     app = FastAPI(
         title="Joker Auto Rent API",
@@ -63,6 +60,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.include_router(api_router, prefix="/api/v1")
 
     media_dir = Path(settings.media_dir)

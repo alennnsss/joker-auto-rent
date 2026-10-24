@@ -17,9 +17,6 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
     currency: str = "KZT"
     timezone: str = "Asia/Almaty"
-    payment_provider: str = "mock"
-    payment_api_key: str = ""
-    payment_webhook_secret: str = ""
     media_dir: str = "media"
     # Почта для кодов подтверждения. Пустой SMTP_HOST — письма пишутся в лог
     smtp_host: str = ""

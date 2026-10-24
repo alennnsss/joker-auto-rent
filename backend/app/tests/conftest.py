@@ -7,7 +7,6 @@ from decimal import Decimal
 # Тесты по умолчанию идут на SQLite; для проверки на PostgreSQL задайте TEST_DATABASE_URL
 os.environ["DATABASE_URL"] = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 os.environ["ENV"] = "development"
-os.environ["PAYMENT_PROVIDER"] = "mock"
 os.environ["JWT_SECRET"] = "test-secret-key-with-at-least-32-bytes"
 
 import pytest

@@ -1,4 +1,4 @@
-import type { BookingStatus, Fuel, PaymentStatus, Transmission } from '@/api/types'
+import type { BookingStatus, Fuel, Transmission } from '@/api/types'
 import { i18n } from '@/i18n'
 
 const NBSP = ' '
@@ -58,4 +58,3 @@ export const BOOKING_STATUSES: BookingStatus[] = [
 export const transmissionLabel = (value: Transmission) => t(`transmission.${value}`)
 export const fuelLabel = (value: Fuel) => t(`fuel.${value}`)
 export const bookingStatusLabel = (value: BookingStatus) => t(`status.booking.${value}`)
-export const paymentStatusLabel = (value: PaymentStatus) => t(`status.payment.${value}`)

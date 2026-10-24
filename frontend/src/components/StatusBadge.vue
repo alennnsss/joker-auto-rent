@@ -1,25 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { BookingStatus, PaymentStatus } from '@/api/types'
-import { bookingStatusLabel, paymentStatusLabel } from '@/utils/format'
+import type { BookingStatus } from '@/api/types'
+import { bookingStatusLabel } from '@/utils/format'
 
-const props = defineProps<
-  { kind: 'booking'; status: BookingStatus } | { kind: 'payment'; status: PaymentStatus }
->()
+const props = defineProps<{ kind: 'booking'; status: BookingStatus }>()
 
-const label = computed(() =>
-  props.kind === 'booking' ? bookingStatusLabel(props.status) : paymentStatusLabel(props.status),
-)
+const label = computed(() => bookingStatusLabel(props.status))
 
 const tone = computed(() => {
   switch (props.status) {
     case 'confirmed':
     case 'active':
-    case 'succeeded':
       return 'success'
     case 'cancelled':
-    case 'failed':
       return 'danger'
     case 'pending':
       return 'gold'

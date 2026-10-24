@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
 
-from app.core.deps import AppSettings, CurrentUser, DbSession, Provider
+from app.core.deps import AppSettings, CurrentUser, DbSession
 from app.schemas.booking import BookingCreate, BookingOut
 from app.services import bookings as booking_service
 
@@ -12,10 +12,9 @@ async def create_booking(
     data: BookingCreate,
     user: CurrentUser,
     db: DbSession,
-    provider: Provider,
     settings: AppSettings,
 ) -> BookingOut:
-    booking = await booking_service.create_booking(db, user, data, provider, settings)
+    booking = await booking_service.create_booking(db, user, data, settings)
     return BookingOut.model_validate(booking)
 
 
@@ -31,8 +30,6 @@ async def get_booking(booking_id: int, user: CurrentUser, db: DbSession) -> Book
 
 
 @router.post("/{booking_id}/cancel", response_model=BookingOut)
-async def cancel_booking(
-    booking_id: int, user: CurrentUser, db: DbSession, provider: Provider
-) -> BookingOut:
-    booking = await booking_service.cancel_by_user(db, booking_id, user, provider)
+async def cancel_booking(booking_id: int, user: CurrentUser, db: DbSession) -> BookingOut:
+    booking = await booking_service.cancel_by_user(db, booking_id, user)
     return BookingOut.model_validate(booking)

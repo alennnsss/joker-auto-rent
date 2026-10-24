@@ -4,9 +4,7 @@
 export type UserRole = 'client' | 'admin'
 export type Transmission = 'automatic' | 'manual'
 export type Fuel = 'petrol' | 'diesel' | 'hybrid' | 'electric' | 'gas'
-export type PaymentMethod = 'cash' | 'online'
 export type BookingStatus = 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled'
-export type PaymentStatus = 'pending' | 'succeeded' | 'failed' | 'refunded'
 export type Money = string
 
 export interface TokenPair {
@@ -108,9 +106,7 @@ export interface Booking {
   return_time: string
   days: number
   total_price: Money
-  payment_method: PaymentMethod
   status: BookingStatus
-  is_paid: boolean
   created_at: string
 }
 
@@ -126,29 +122,6 @@ export interface BookingPayload {
   return_location: string
   pickup_time: string
   return_time: string
-  payment_method: PaymentMethod
-}
-
-export interface Payment {
-  id: number
-  booking_id: number
-  amount: Money
-  provider: string
-  provider_payment_id: string
-  status: PaymentStatus
-  created_at: string
-}
-
-export interface PaymentInit {
-  payment_id: number
-  status: PaymentStatus
-  redirect_url: string
-}
-
-export interface PublicConfig {
-  currency: string
-  timezone: string
-  online_payment_enabled: boolean
 }
 
 export interface CarPayload {

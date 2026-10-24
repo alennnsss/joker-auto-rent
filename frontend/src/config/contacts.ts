@@ -11,3 +11,8 @@ export const contacts = {
 }
 
 export const whatsappLink = `https://wa.me/${contacts.whatsapp}`
+
+/** Ссылка на чат WhatsApp с заранее заполненным сообщением. */
+export function whatsappMessageLink(text: string): string {
+  return `${whatsappLink}?text=${encodeURIComponent(text)}`
+}

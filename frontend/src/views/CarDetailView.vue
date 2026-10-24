@@ -2,7 +2,7 @@
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
 import { carsApi } from '@/api/cars'
 import { errorMessage } from '@/api/http'
@@ -10,6 +10,8 @@ import type { Availability, Car } from '@/api/types'
 import CarGallery from '@/components/CarGallery.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import TripPanel from '@/components/TripPanel.vue'
+import { whatsappMessageLink } from '@/config/contacts'
+import { isLocationValid, locationLabel } from '@/config/locations'
 import { useBookingStore } from '@/stores/booking'
 import { busyDays, todayIso } from '@/utils/date'
 import { formatDate, formatDays, formatPrice, fuelLabel, transmissionLabel } from '@/utils/format'
@@ -17,7 +19,6 @@ import { formatDate, formatDays, formatPrice, fuelLabel, transmissionLabel } fro
 const props = defineProps<{ id: number }>()
 
 const route = useRoute()
-const router = useRouter()
 const booking = useBookingStore()
 const { t, locale } = useI18n()
 
@@ -39,6 +40,9 @@ const disabledDays = computed(() => busyDays(availability.value?.busy ?? []))
 
 const title = computed(() => (car.value ? `${car.value.brand} ${car.value.model}` : ''))
 const datesValid = computed(() => start.value >= today && end.value > start.value)
+const locationsValid = computed(
+  () => isLocationValid(trip.value.pickupLocation) && isLocationValid(trip.value.returnLocation),
+)
 
 const specs = computed(() => {
   if (!car.value) return []
@@ -90,8 +94,31 @@ watch([title, locale], () => {
 
 onMounted(load)
 
-function book() {
-  router.push({ name: 'booking', params: { carId: props.id } })
+// Бронь оформляется в WhatsApp: собираем сообщение о машине и датах для менеджера
+function bookViaWhatsapp() {
+  if (!car.value) return
+  const tr = trip.value
+  const lines = [
+    t('carDetail.waGreeting', { car: `${title.value}, ${car.value.year}` }),
+    t('carDetail.waPickup', {
+      when: `${formatDate(tr.pickupDate)}, ${tr.pickupTime}`,
+      where: locationLabel(tr.pickupLocation),
+    }),
+    t('carDetail.waReturn', {
+      when: `${formatDate(tr.returnDate)}, ${tr.returnTime}`,
+      where: locationLabel(tr.returnLocation),
+    }),
+  ]
+  const quote = availability.value
+  if (quote?.available && quote.days && quote.total_price) {
+    lines.push(
+      t('carDetail.waTotal', {
+        days: formatDays(quote.days),
+        total: formatPrice(quote.total_price),
+      }),
+    )
+  }
+  window.open(whatsappMessageLink(lines.join('\n')), '_blank', 'noopener')
 }
 </script>
 
@@ -171,11 +198,14 @@ function book() {
           <button
             type="button"
             class="btn btn--gold btn--block"
-            :disabled="!datesValid || checking || availability?.available === false"
-            @click="book"
+            :disabled="
+              !datesValid || !locationsValid || checking || availability?.available === false
+            "
+            @click="bookViaWhatsapp"
           >
-            {{ t('common.book') }}
+            {{ t('carDetail.bookWhatsapp') }}
           </button>
+          <p class="muted booking__note booking__hint">{{ t('carDetail.whatsappHint') }}</p>
 
           <div v-if="availability?.busy.length" class="busy">
             <p class="busy__title muted">{{ t('carDetail.busyTitle') }}</p>
@@ -301,6 +331,11 @@ function book() {
 
   &__note {
     font-size: 0.85rem;
+  }
+
+  &__hint {
+    margin: 8px 0 0;
+    text-align: center;
   }
 }
 

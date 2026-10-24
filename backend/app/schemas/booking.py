@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models import BookingStatus, PaymentMethod
+from app.models import BookingStatus
 from app.schemas.auth import UserOut
 from app.schemas.car import CarShort
 
@@ -16,7 +16,6 @@ class BookingCreate(BaseModel):
     return_location: str = Field(min_length=2, max_length=255)
     pickup_time: time = time(10, 0)
     return_time: time = time(10, 0)
-    payment_method: PaymentMethod = PaymentMethod.CASH
 
 
 class BookingOut(BaseModel):
@@ -32,9 +31,7 @@ class BookingOut(BaseModel):
     return_time: time
     days: int
     total_price: Decimal
-    payment_method: PaymentMethod
     status: BookingStatus
-    is_paid: bool
     created_at: datetime
 
 

@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
+from app.core.i18n import Lang, verification_email
 from app.core.security import create_token, decode_token, hash_password, verify_password
 from app.models import User
 from app.schemas.auth import LoginIn, RegisterIn, TokenPair, UserUpdate
@@ -37,7 +38,9 @@ def _hash_code(code: str, settings: Settings) -> str:
     return hmac.new(settings.jwt_secret.encode(), code.encode(), hashlib.sha256).hexdigest()
 
 
-async def send_verification_code(db: AsyncSession, user: User, settings: Settings) -> None:
+async def send_verification_code(
+    db: AsyncSession, user: User, settings: Settings, lang: Lang = "ru"
+) -> None:
     """Генерирует новый 6-значный код, сохраняет его хэш и отправляет письмо."""
     code = f"{secrets.randbelow(1_000_000):06d}"
     now = datetime.now(UTC)
@@ -47,20 +50,17 @@ async def send_verification_code(db: AsyncSession, user: User, settings: Setting
     user.email_code_attempts = 0
     await db.commit()
 
-    body = (
-        f"Здравствуйте, {user.full_name}!\n\n"
-        f"Ваш код подтверждения email на сайте Joker Auto Rent: {code}\n"
-        f"Код действует {settings.email_code_ttl_min} минут.\n\n"
-        "Если вы не регистрировались на нашем сайте, просто проигнорируйте это письмо."
-    )
+    subject, body = verification_email(lang, user.full_name, code, settings.email_code_ttl_min)
     try:
-        await email_service.send_email(settings, user.email, "Код подтверждения email", body)
+        await email_service.send_email(settings, user.email, subject, body)
     except Exception:
         # Регистрация не должна падать из-за почты — пользователь запросит код повторно
         logger.exception("Failed to send verification email to %s", user.email)
 
 
-async def register(db: AsyncSession, data: RegisterIn, settings: Settings) -> TokenPair:
+async def register(
+    db: AsyncSession, data: RegisterIn, settings: Settings, lang: Lang = "ru"
+) -> TokenPair:
     if await get_user_by_email(db, data.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "Пользователь с таким email уже существует")
     user = User(
@@ -71,7 +71,7 @@ async def register(db: AsyncSession, data: RegisterIn, settings: Settings) -> To
     )
     db.add(user)
     await db.commit()
-    await send_verification_code(db, user, settings)
+    await send_verification_code(db, user, settings, lang)
     return issue_tokens(user, settings)
 
 
@@ -99,7 +99,9 @@ async def verify_email(db: AsyncSession, user: User, code: str, settings: Settin
     return user
 
 
-async def resend_verification(db: AsyncSession, user: User, settings: Settings) -> None:
+async def resend_verification(
+    db: AsyncSession, user: User, settings: Settings, lang: Lang = "ru"
+) -> None:
     if user.email_verified:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Email уже подтверждён")
     if user.email_code_sent_at is not None:
@@ -110,7 +112,7 @@ async def resend_verification(db: AsyncSession, user: User, settings: Settings) 
                 status.HTTP_429_TOO_MANY_REQUESTS,
                 f"Отправить код повторно можно через {wait} сек.",
             )
-    await send_verification_code(db, user, settings)
+    await send_verification_code(db, user, settings, lang)
 
 
 async def login(db: AsyncSession, data: LoginIn, settings: Settings) -> TokenPair:

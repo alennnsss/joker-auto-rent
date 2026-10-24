@@ -1,7 +1,6 @@
 from datetime import UTC, date, datetime, time
 from decimal import Decimal
 from enum import StrEnum
-from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     CheckConstraint,
@@ -20,14 +19,6 @@ from app.db.base import Base, str_enum
 from app.models.car import Car
 from app.models.user import User
 
-if TYPE_CHECKING:
-    from app.models.payment import Payment
-
-
-class PaymentMethod(StrEnum):
-    CASH = "cash"
-    ONLINE = "online"
-
 
 class BookingStatus(StrEnum):
     PENDING = "pending"
@@ -37,8 +28,6 @@ class BookingStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
-# Статусы, при которых авто считается занятым на даты брони.
-# Должны совпадать с WHERE в exclusion constraint (миграция 0001).
 BLOCKING_STATUSES = (BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.ACTIVE)
 
 
@@ -61,7 +50,6 @@ class Booking(Base):
     pickup_time: Mapped[time] = mapped_column(Time)
     return_time: Mapped[time] = mapped_column(Time)
     total_price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
-    payment_method: Mapped[PaymentMethod] = mapped_column(str_enum(PaymentMethod, "payment_method"))
     status: Mapped[BookingStatus] = mapped_column(
         str_enum(BookingStatus, "booking_status"), default=BookingStatus.PENDING, index=True
     )
@@ -71,14 +59,7 @@ class Booking(Base):
 
     car: Mapped[Car] = relationship(lazy="selectin")
     user: Mapped[User] = relationship(lazy="selectin")
-    payments: Mapped[list["Payment"]] = relationship(
-        lazy="selectin", back_populates="booking", order_by="Payment.id"
-    )
 
     @property
     def days(self) -> int:
         return (self.end_date - self.start_date).days
-
-    @property
-    def is_paid(self) -> bool:
-        return any(p.status == "succeeded" for p in self.payments)

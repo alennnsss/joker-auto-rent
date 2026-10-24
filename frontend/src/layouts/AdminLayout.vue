@@ -13,7 +13,6 @@ const links = [
   { name: 'admin-bookings', label: 'admin.bookings' },
   { name: 'admin-cars', label: 'admin.cars' },
   { name: 'admin-users', label: 'admin.users' },
-  { name: 'admin-payments', label: 'admin.payments' },
 ] as const
 
 function logout() {

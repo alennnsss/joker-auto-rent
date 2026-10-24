@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
-from app.core.deps import AppSettings, DbSession, Provider, require_admin
+from app.core.deps import AppSettings, DbSession, require_admin
 from app.models import BookingStatus, User
 from app.schemas.auth import UserOut
 from app.schemas.booking import AdminBookingOut, BookingStatusUpdate
@@ -17,10 +17,8 @@ from app.schemas.car import (
     CategoryIn,
     CategoryOut,
 )
-from app.schemas.payment import PaymentOut
 from app.services import bookings as booking_service
 from app.services import cars as car_service
-from app.services import payment_service
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -99,22 +97,16 @@ async def list_bookings(
 
 @router.patch("/bookings/{booking_id}/status", response_model=AdminBookingOut)
 async def change_booking_status(
-    booking_id: int, data: BookingStatusUpdate, db: DbSession, provider: Provider
+    booking_id: int, data: BookingStatusUpdate, db: DbSession
 ) -> AdminBookingOut:
-    booking = await booking_service.change_status(db, booking_id, data.status, provider)
+    booking = await booking_service.change_status(db, booking_id, data.status)
     return AdminBookingOut.model_validate(booking)
 
 
-# --- Клиенты и платежи ---
+# --- Клиенты ---
 
 
 @router.get("/users", response_model=list[UserOut])
 async def list_users(db: DbSession, limit: Limit = 50, offset: Offset = 0) -> list[UserOut]:
     users = await db.scalars(select(User).order_by(User.id.desc()).limit(limit).offset(offset))
     return [UserOut.model_validate(u) for u in users]
-
-
-@router.get("/payments", response_model=list[PaymentOut])
-async def list_payments(db: DbSession, limit: Limit = 50, offset: Offset = 0) -> list[PaymentOut]:
-    payments = await payment_service.list_payments(db, limit, offset)
-    return [PaymentOut.model_validate(p) for p in payments]

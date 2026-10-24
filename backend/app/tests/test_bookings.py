@@ -26,7 +26,6 @@ async def test_create_booking_price_is_server_side(
     assert data["total_price"] == "45000.00"
     assert data["days"] == 3
     assert data["status"] == "pending"
-    assert data["payment_method"] == "cash"
     assert data["car"]["brand"] == "Toyota"
 
 
