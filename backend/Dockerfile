@@ -14,4 +14,6 @@ COPY alembic.ini ./
 COPY migrations ./migrations
 
 EXPOSE 8000
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Railway и другие хостинги передают порт в $PORT.
+# SEED_ON_START=1 — разово создать админа и демо-авто (там, где нет доступа к shell)
+CMD ["sh", "-c", "alembic upgrade head && if [ \"$SEED_ON_START\" = 1 ]; then python -m app.seed; fi && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
