@@ -368,6 +368,7 @@ img {
 }
 
 .p-datepicker-panel {
+  max-width: calc(100vw - 32px);
   font-family: var(--font-body);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -379,6 +380,26 @@ img {
 
   .p-datepicker-day.p-disabled {
     opacity: 0.35;
+  }
+
+  // Телефоны: панель по ширине экрана с отступами 16px (PrimeVue ставит left и width
+  // инлайном и прижимает панель к краю), дни ужимаются под ширину — без горизонтального скролла
+  @include media-down(sm) {
+    left: 16px !important;
+    width: calc(100vw - 32px) !important;
+    min-width: 0 !important;
+
+    .p-datepicker-day-view {
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    .p-datepicker-day {
+      width: 100%;
+      max-width: 40px;
+      height: auto;
+      aspect-ratio: 1;
+    }
   }
 }
 

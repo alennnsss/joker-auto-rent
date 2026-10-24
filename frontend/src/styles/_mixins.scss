@@ -12,6 +12,17 @@
   }
 }
 
+// Только ниже брейкпоинта — для переопределений, которые нельзя «откатить» mobile-first
+// (например, !important поверх инлайн-стилей сторонних компонентов)
+@mixin media-down($bp) {
+  @if not map.has-key($breakpoints, $bp) {
+    @error 'Unknown breakpoint: #{$bp}';
+  }
+  @media (max-width: map.get($breakpoints, $bp) - 0.02px) {
+    @content;
+  }
+}
+
 // Ховер только на устройствах с мышью (без «залипания» на тач-экранах)
 @mixin hover {
   @media (hover: hover) and (pointer: fine) {
