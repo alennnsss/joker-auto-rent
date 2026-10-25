@@ -13,7 +13,9 @@ html {
   text-size-adjust: 100%;
   color-scheme: dark;
   // Страховка от горизонтального скролла на телефонах (iOS Safari шире считает
-  // минимальную ширину полей). clip, а не hidden — не ломает position: sticky.
+  // минимальную ширину полей). clip, а не hidden — не ломает position: sticky;
+  // hidden — запасной вариант для старых iOS без clip (у html он уходит во viewport).
+  overflow-x: hidden;
   overflow-x: clip;
 }
 
@@ -222,6 +224,10 @@ img {
 .select,
 .textarea {
   width: 100%;
+  // В iOS Safari минимальная ширина select = самый длинный вариант, input[type=number] тоже
+  // широкий — без этого поля распирают сетки шире экрана
+  min-width: 0;
+  max-width: 100%;
   min-height: 48px;
   padding: 12px 14px;
   border: 1px solid var(--color-border);

@@ -278,6 +278,9 @@ function bookViaWhatsapp() {
 .detail {
   display: grid;
   gap: 24px;
+  // minmax(0, …): без явной колонки iOS Safari растягивал её по самому длинному
+  // варианту в выпадающем списке места («Офис: ул. Казыбек би…») — шире экрана
+  grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     'gallery'
     'booking'
@@ -422,6 +425,7 @@ function bookViaWhatsapp() {
 
   &__row {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0 12px;
 
     @include media(sm) {
