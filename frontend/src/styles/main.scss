@@ -12,6 +12,9 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   color-scheme: dark;
+  // Страховка от горизонтального скролла на телефонах (iOS Safari шире считает
+  // минимальную ширину полей). clip, а не hidden — не ломает position: sticky.
+  overflow-x: clip;
 }
 
 body {

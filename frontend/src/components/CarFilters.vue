@@ -191,10 +191,16 @@ const activeCount = computed(
     grid-column: 1 / -1;
   }
 
+  // minmax(0, …): в iOS Safari у input[type=number] большая минимальная ширина,
+  // с 1fr две колонки распирали фильтры шире экрана
   &__range {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+
+    .input {
+      min-width: 0;
+    }
   }
 
   &__actions {

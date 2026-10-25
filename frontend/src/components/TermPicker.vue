@@ -91,15 +91,17 @@ function set(value: number) {
   }
 
   &__chip {
+    min-width: 0;
     min-height: 44px;
-    padding: 0 8px;
-    white-space: nowrap;
+    padding: 4px 6px;
+    line-height: 1.2;
     border: 1px solid var(--color-border);
     border-radius: 999px;
     background: var(--color-surface-2);
     color: var(--color-text);
     font: inherit;
-    font-size: 0.95rem;
+    // На самых узких телефонах чуть мельче, чтобы «30 дней» помещалось в ячейку
+    font-size: clamp(0.85rem, 3.6vw, 0.95rem);
     cursor: pointer;
 
     @include motion {
