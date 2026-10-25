@@ -10,20 +10,23 @@ import { formatPrice, fuelLabel, transmissionLabel } from '@/utils/format'
 const props = withDefaults(
   defineProps<{
     car: Car
+    /** Дата получения из фильтров — переносится в калькулятор на карточке авто */
     startDate?: string
-    endDate?: string
     /** Срок аренды в сутках: цена показывается за весь срок */
     days?: number
   }>(),
-  { startDate: undefined, endDate: undefined, days: 1 },
+  { startDate: undefined, days: 1 },
 )
 
 const { t } = useI18n()
 const title = computed(() => `${props.car.brand} ${props.car.model}`)
 const total = computed(() => Number(props.car.price_per_day) * props.days)
-const query = computed(() =>
-  props.startDate && props.endDate ? { start: props.startDate, end: props.endDate } : undefined,
-)
+const query = computed(() => {
+  const q: Record<string, string> = {}
+  if (props.startDate) q.start = props.startDate
+  if (props.days > 1) q.days = String(props.days)
+  return Object.keys(q).length ? q : undefined
+})
 
 const specs = computed(() => [
   {

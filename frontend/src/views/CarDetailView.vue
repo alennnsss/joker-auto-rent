@@ -8,13 +8,15 @@ import { carsApi } from '@/api/cars'
 import { errorMessage } from '@/api/http'
 import type { Availability, Car } from '@/api/types'
 import CarGallery from '@/components/CarGallery.vue'
+import DateField from '@/components/DateField.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import TripPanel from '@/components/TripPanel.vue'
+import LocationSelect from '@/components/LocationSelect.vue'
+import TermPicker from '@/components/TermPicker.vue'
 import { whatsappMessageLink } from '@/config/contacts'
-import { isLocationValid, locationLabel } from '@/config/locations'
-import { useBookingStore } from '@/stores/booking'
+import { isLocationValid, locationLabel, TIMES } from '@/config/locations'
+import { returnDate, useBookingStore } from '@/stores/booking'
 import { busyDays, todayIso } from '@/utils/date'
-import { formatDate, formatDays, formatPrice, fuelLabel, transmissionLabel } from '@/utils/format'
+import { formatDate, formatPrice, fuelLabel, transmissionLabel } from '@/utils/format'
 
 const props = defineProps<{ id: number }>()
 
@@ -30,19 +32,39 @@ const checking = ref(false)
 
 const today = todayIso()
 const { trip } = storeToRefs(booking)
+
+// Дата получения и срок из каталога: /cars/7?start=2026-11-01&days=3
 const queryStr = (key: string) => (typeof route.query[key] === 'string' ? (route.query[key] as string) : '')
-if (queryStr('start') && queryStr('end') > queryStr('start')) {
-  booking.setDates(queryStr('start'), queryStr('end'))
+const queryStart = queryStr('start') >= today ? queryStr('start') : ''
+if (queryStart || queryStr('days')) {
+  booking.setTerm(queryStart, Number(queryStr('days')) || 1)
 }
+if (trip.value.pickupDate < today) booking.setTerm(today, trip.value.days)
+
 const start = computed(() => trip.value.pickupDate)
-const end = computed(() => trip.value.returnDate)
+const end = computed(() => returnDate(trip.value))
 const disabledDays = computed(() => busyDays(availability.value?.busy ?? []))
 
+// Поля калькулятора пишут прямо в черновик брони
+function field<K extends 'pickupLocation' | 'pickupDate' | 'pickupTime' | 'days'>(key: K) {
+  return computed({
+    get: () => trip.value[key],
+    set: (value) => {
+      trip.value = { ...trip.value, [key]: value }
+    },
+  })
+}
+const pickupLocation = field('pickupLocation')
+const pickupDate = field('pickupDate')
+const pickupTime = field('pickupTime')
+const days = field('days')
+
 const title = computed(() => (car.value ? `${car.value.brand} ${car.value.model}` : ''))
-const datesValid = computed(() => start.value >= today && end.value > start.value)
-const locationsValid = computed(
-  () => isLocationValid(trip.value.pickupLocation) && isLocationValid(trip.value.returnLocation),
-)
+const datesValid = computed(() => Boolean(start.value) && start.value >= today)
+const locationValid = computed(() => isLocationValid(trip.value.pickupLocation))
+// Сумма считается сразу при выборе срока — по той же формуле, что и на сервере
+const total = computed(() => (car.value ? Number(car.value.price_per_day) * days.value : 0))
+const busy = computed(() => availability.value?.available === false)
 
 const specs = computed(() => {
   if (!car.value) return []
@@ -93,7 +115,7 @@ watch([title, locale], () => {
 
 onMounted(load)
 
-// Бронь оформляется в WhatsApp: собираем сообщение о машине и датах для менеджера
+// Бронь оформляется в WhatsApp: собираем сообщение о машине, сроке и сумме для менеджера
 function bookViaWhatsapp() {
   if (!car.value) return
   const tr = trip.value
@@ -103,20 +125,12 @@ function bookViaWhatsapp() {
       when: `${formatDate(tr.pickupDate)}, ${tr.pickupTime}`,
       where: locationLabel(tr.pickupLocation),
     }),
-    t('carDetail.waReturn', {
-      when: `${formatDate(tr.returnDate)}, ${tr.returnTime}`,
-      where: locationLabel(tr.returnLocation),
+    t('carDetail.waReturn', { when: `${formatDate(end.value)}, ${tr.pickupTime}` }),
+    t('carDetail.waTotal', {
+      days: t('filters.termDays', tr.days),
+      total: formatPrice(total.value),
     }),
   ]
-  const quote = availability.value
-  if (quote?.available && quote.days && quote.total_price) {
-    lines.push(
-      t('carDetail.waTotal', {
-        days: formatDays(quote.days),
-        total: formatPrice(quote.total_price),
-      }),
-    )
-  }
   window.open(whatsappMessageLink(lines.join('\n')), '_blank', 'noopener')
 }
 </script>
@@ -136,13 +150,85 @@ function bookViaWhatsapp() {
       <nav class="crumbs muted" :aria-label="t('carDetail.crumbs')">
         <RouterLink :to="{ name: 'cars' }">{{ t('common.fleet') }}</RouterLink>
         <span aria-hidden="true"> / </span>
-        <span>{{ title }}</span>
+        <span aria-current="page">{{ title }}</span>
       </nav>
 
       <div class="detail">
-        <div class="detail__main">
+        <div class="detail__gallery">
           <CarGallery :images="car.images" :title="title" />
+        </div>
 
+        <aside class="booking card" aria-labelledby="booking-title">
+          <h1 id="booking-title" class="booking__title">{{ title }}</h1>
+          <p class="booking__meta muted">{{ car.category.name }} · {{ car.year }}</p>
+          <p class="booking__price">
+            <span class="text-gold">{{ formatPrice(car.price_per_day) }}</span>
+            <span class="muted">&nbsp;{{ t('common.perDay') }}</span>
+          </p>
+
+          <fieldset class="booking__pickup">
+            <legend class="booking__legend">
+              <span class="booking__dot" aria-hidden="true" />{{ t('common.pickup') }}
+            </legend>
+            <LocationSelect id="detail-location" v-model="pickupLocation" :label="t('common.place')" />
+            <div class="booking__row">
+              <DateField
+                id="detail-pickup-date"
+                v-model="pickupDate"
+                :label="t('common.date')"
+                :min="today"
+                :disabled-days="disabledDays"
+              />
+              <div class="field">
+                <label class="field__label" for="detail-time">{{ t('common.time') }}</label>
+                <select id="detail-time" v-model="pickupTime" class="select">
+                  <option v-for="time in TIMES" :key="time" :value="time">{{ time }}</option>
+                </select>
+              </div>
+            </div>
+          </fieldset>
+
+          <TermPicker id="detail-term" v-model="days" stepper :label="t('trip.term')" />
+
+          <div class="summary" aria-live="polite" data-test="summary">
+            <div class="summary__row muted">
+              <span>{{ formatPrice(car.price_per_day) }} × {{ t('filters.termDays', days) }}</span>
+            </div>
+            <div class="summary__row summary__total">
+              <span>{{ t('carDetail.total') }}</span>
+              <strong data-test="total">{{ formatPrice(total) }}</strong>
+            </div>
+            <div v-if="datesValid" class="summary__row summary__return">
+              <span class="muted">{{ t('carDetail.returnAt') }}</span>
+              <span data-test="return">{{ formatDate(end) }}, {{ pickupTime }}</span>
+            </div>
+          </div>
+
+          <div v-if="busy" class="alert alert--error" role="alert">
+            {{ t('carDetail.busyAlert') }}
+          </div>
+
+          <button
+            type="button"
+            class="btn btn--gold btn--block"
+            :disabled="!datesValid || !locationValid || checking || busy"
+            @click="bookViaWhatsapp"
+          >
+            {{ t('carDetail.bookWhatsapp') }}
+          </button>
+          <p class="muted booking__hint">{{ t('carDetail.whatsappHint') }}</p>
+
+          <div v-if="availability?.busy.length" class="busy">
+            <p class="busy__title muted">{{ t('carDetail.busyTitle') }}</p>
+            <ul>
+              <li v-for="b in availability.busy" :key="b.start_date">
+                {{ formatDate(b.start_date) }} — {{ formatDate(b.end_date) }}
+              </li>
+            </ul>
+          </div>
+        </aside>
+
+        <div class="detail__info">
           <section class="detail__section">
             <h2>{{ t('carDetail.specs') }}</h2>
             <dl class="specs">
@@ -168,50 +254,6 @@ function bookViaWhatsapp() {
             </ul>
           </section>
         </div>
-
-        <aside class="booking card" aria-labelledby="booking-title">
-          <h1 id="booking-title" class="booking__title">{{ title }}</h1>
-          <p class="muted">{{ car.category.name }} · {{ car.year }}</p>
-          <p class="booking__price">
-            <span class="text-gold">{{ formatPrice(car.price_per_day) }}</span>
-            <span class="muted"> {{ t('common.perDay') }}</span>
-          </p>
-
-          <TripPanel v-model="trip" :disabled-days="disabledDays" compact id-prefix="detail" />
-
-          <div aria-live="polite">
-            <template v-if="availability?.available === true && availability.total_price">
-              <div class="booking__total">
-                <span>{{ formatDays(availability.days ?? 0) }}</span>
-                <strong>{{ formatPrice(availability.total_price) }}</strong>
-              </div>
-            </template>
-            <div v-else-if="availability?.available === false" class="alert alert--error">
-              {{ t('carDetail.busyAlert') }}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            class="btn btn--gold btn--block"
-            :disabled="
-              !datesValid || !locationsValid || checking || availability?.available === false
-            "
-            @click="bookViaWhatsapp"
-          >
-            {{ t('carDetail.bookWhatsapp') }}
-          </button>
-          <p class="muted booking__note booking__hint">{{ t('carDetail.whatsappHint') }}</p>
-
-          <div v-if="availability?.busy.length" class="busy">
-            <p class="busy__title muted">{{ t('carDetail.busyTitle') }}</p>
-            <ul>
-              <li v-for="b in availability.busy" :key="b.start_date">
-                {{ formatDate(b.start_date) }} — {{ formatDate(b.end_date) }}
-              </li>
-            </ul>
-          </div>
-        </aside>
       </div>
     </template>
   </div>
@@ -231,13 +273,34 @@ function bookViaWhatsapp() {
   }
 }
 
+// Телефон: фото → калькулятор → характеристики (калькулятор не уезжает в конец страницы).
+// Десктоп: слева фото и характеристики, справа липкий калькулятор.
 .detail {
   display: grid;
-  gap: 32px;
+  gap: 24px;
+  grid-template-areas:
+    'gallery'
+    'booking'
+    'info';
 
   @include media(lg) {
-    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr);
+    grid-template-columns: minmax(0, 1.6fr) minmax(340px, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'gallery booking'
+      'info booking';
+    gap: 0 32px;
     align-items: start;
+  }
+
+  &__gallery {
+    grid-area: gallery;
+    min-width: 0;
+  }
+
+  &__info {
+    grid-area: info;
+    min-width: 0;
   }
 
   &__skeleton {
@@ -245,7 +308,15 @@ function bookViaWhatsapp() {
   }
 
   &__section {
-    margin-top: 40px;
+    margin-top: 16px;
+
+    & + & {
+      margin-top: 40px;
+    }
+
+    @include media(lg) {
+      margin-top: 40px;
+    }
 
     h2 {
       font-size: 1.5rem;
@@ -260,12 +331,12 @@ function bookViaWhatsapp() {
 
 .specs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin: 0;
 
   @include media(md) {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   &__item {
@@ -273,6 +344,13 @@ function bookViaWhatsapp() {
     border-radius: var(--radius-sm);
     background: var(--color-surface);
     border: 1px solid var(--color-border);
+
+    // В две колонки нечётная последняя плашка — на всю строку, без «дыры»
+    @include media-down(md) {
+      &:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+      }
+    }
   }
 
   dt {
@@ -295,6 +373,9 @@ function bookViaWhatsapp() {
 }
 
 .booking {
+  grid-area: booking;
+  min-width: 0;
+
   @include media(lg) {
     position: sticky;
     top: calc(var(--header-height) + 24px);
@@ -305,33 +386,88 @@ function bookViaWhatsapp() {
     margin-bottom: 4px;
   }
 
+  &__meta {
+    margin-bottom: 8px;
+  }
+
   &__price {
     font-size: 1.6rem;
     font-weight: 600;
     margin-bottom: 20px;
   }
 
-  &__total {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px solid var(--color-border);
-
-    strong {
-      font-size: 1.3rem;
-      color: var(--color-gold);
-    }
+  &__pickup {
+    min-width: 0;
+    margin: 0 0 16px;
+    padding: 16px 16px 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
   }
 
-  &__note {
-    font-size: 0.85rem;
+  &__legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 6px;
+    font-weight: 600;
+  }
+
+  &__dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 3px solid var(--color-gold-dark);
+    background: var(--color-gold);
+  }
+
+  &__row {
+    display: grid;
+    gap: 0 12px;
+
+    @include media(sm) {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    }
   }
 
   &__hint {
     margin: 8px 0 0;
+    font-size: 0.85rem;
     text-align: center;
+  }
+}
+
+.summary {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4px 12px;
+    font-size: 0.95rem;
+  }
+
+  &__total {
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+    font-weight: 600;
+
+    strong {
+      font-size: 1.5rem;
+      color: var(--color-gold);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &__return {
+    font-size: 0.9rem;
   }
 }
 

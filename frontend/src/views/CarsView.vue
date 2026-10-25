@@ -8,8 +8,9 @@ import CarCard from '@/components/CarCard.vue'
 import CarFilters, { type FilterState } from '@/components/CarFilters.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { PAGE_SIZE, useCarsStore } from '@/stores/cars'
+import { clampTerm } from '@/config/terms'
 import { useBookingStore } from '@/stores/booking'
-import { daysBetween } from '@/utils/date'
+import { addDays } from '@/utils/date'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,20 +29,20 @@ function fromQuery(query: LocationQuery): FilterState {
     min_price: str('min_price'),
     max_price: str('max_price'),
     start_date: str('start_date'),
-    end_date: str('end_date'),
     sort: SORTS.includes(sort) ? sort : 'price_asc',
   }
 }
 
 function toApi(state: FilterState): ApiFilters {
   const num = (v: string) => (v ? Number(v) : undefined)
-  const hasDates = Boolean(state.start_date && state.end_date && state.end_date > state.start_date)
+  // Даты возврата в фильтрах нет: свободность проверяем на «получение + срок»
+  const start = state.start_date || undefined
   return {
     category_id: num(state.category_id),
     min_price: num(state.min_price),
     max_price: num(state.max_price),
-    start_date: hasDates ? state.start_date : undefined,
-    end_date: hasDates ? state.end_date : undefined,
+    start_date: start,
+    end_date: start ? addDays(start, clampTerm(state.days || 1)) : undefined,
     sort: state.sort,
   }
 }
@@ -49,13 +50,8 @@ function toApi(state: FilterState): ApiFilters {
 const filters = ref<FilterState>(fromQuery(route.query))
 
 const hasMore = computed(() => store.items.length < store.total)
-const datesSelected = computed(() => Boolean(toApi(filters.value).start_date))
-// Срок для цены в карточках: из выбранных дат, иначе из переключателя срока
-const termDays = computed(() => {
-  const api = toApi(filters.value)
-  if (api.start_date && api.end_date) return daysBetween(api.start_date, api.end_date)
-  return Math.max(1, Number(filters.value.days) || 1)
-})
+const datesSelected = computed(() => Boolean(filters.value.start_date))
+const termDays = computed(() => clampTerm(filters.value.days || 1))
 
 // Фильтры → URL (можно поделиться ссылкой, кнопка «назад» работает)
 watch(
@@ -74,9 +70,8 @@ watch(
   () => route.query,
   (query) => {
     filters.value = fromQuery(query)
-    const api = toApi(filters.value)
-    if (api.start_date && api.end_date) booking.setDates(api.start_date, api.end_date)
-    store.fetchCars(api)
+    booking.setTerm(filters.value.start_date, termDays.value)
+    store.fetchCars(toApi(filters.value))
   },
 )
 
@@ -116,8 +111,7 @@ function reset() {
         v-for="car in store.items"
         :key="car.id"
         :car="car"
-        :start-date="toApi(filters).start_date"
-        :end-date="toApi(filters).end_date"
+        :start-date="filters.start_date || undefined"
         :days="termDays"
       />
       <template v-if="store.loading && !store.items.length">

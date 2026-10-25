@@ -52,13 +52,18 @@ describe('CarCard', () => {
     expect(img.attributes('alt')).toBe('Toyota Camry')
   })
 
-  it('passes selected dates to the detail page link', () => {
-    const wrapper = mountCard({ startDate: '2026-11-01', endDate: '2026-11-04' })
+  it('passes pickup date and term to the detail page link', () => {
+    const wrapper = mountCard({ startDate: '2026-11-01', days: 3 })
     const links = wrapper.findAllComponents(RouterLinkStub)
     expect(links[links.length - 1]?.props('to')).toEqual({
       name: 'car-detail',
       params: { id: 7 },
-      query: { start: '2026-11-01', end: '2026-11-04' },
+      query: { start: '2026-11-01', days: '3' },
     })
+  })
+
+  it('links without query for the default one-day term', () => {
+    const links = mountCard().findAllComponents(RouterLinkStub)
+    expect(links[0]?.props('to')).toEqual({ name: 'car-detail', params: { id: 7 }, query: undefined })
   })
 })

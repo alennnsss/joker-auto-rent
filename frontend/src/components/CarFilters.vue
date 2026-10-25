@@ -4,16 +4,18 @@ import { useI18n } from 'vue-i18n'
 
 import type { CarSort, Category } from '@/api/types'
 import DateField from '@/components/DateField.vue'
-import { addDays, daysBetween, todayIso } from '@/utils/date'
+import TermPicker from '@/components/TermPicker.vue'
+import { clampTerm } from '@/config/terms'
+import { todayIso } from '@/utils/date'
 
 export interface FilterState {
   category_id: string
-  /** Срок аренды в сутках — для расчёта цены в карточках */
+  /** Срок аренды в сутках — для расчёта цены в карточках и проверки занятости */
   days: string
   min_price: string
   max_price: string
+  /** Дата получения; дата возврата = получение + срок */
   start_date: string
-  end_date: string
   sort: CarSort
 }
 
@@ -25,23 +27,14 @@ const { t } = useI18n()
 const expanded = ref(false)
 const today = todayIso()
 
-const TERMS = [1, 3, 7, 10, 30]
-const minEnd = computed(() => (filters.value.start_date ? addDays(filters.value.start_date, 1) : today))
-
 function update<K extends keyof FilterState>(key: K, value: FilterState[K]) {
-  const next = { ...filters.value, [key]: value }
-  // Дата окончания не может быть раньше начала
-  if (key === 'start_date' && next.end_date && next.end_date <= String(value)) {
-    next.end_date = addDays(String(value), 1)
-  }
-  // Срок и даты согласованы: срок сдвигает дату возврата, даты задают срок
-  if (key === 'days' && next.start_date) {
-    next.end_date = addDays(next.start_date, Number(value))
-  } else if (next.start_date && next.end_date > next.start_date) {
-    next.days = String(daysBetween(next.start_date, next.end_date))
-  }
-  filters.value = next
+  filters.value = { ...filters.value, [key]: value }
 }
+
+const term = computed({
+  get: () => clampTerm(filters.value.days || 1),
+  set: (n: number) => update('days', String(n)),
+})
 
 const activeCount = computed(
   () =>
@@ -67,36 +60,13 @@ const activeCount = computed(
     </button>
 
     <div id="filters-body" class="filters__body" :class="{ 'is-open': expanded }">
-      <div class="field filters__terms">
-        <span id="f-term" class="field__label">{{ t('filters.term') }}</span>
-        <div class="terms" role="radiogroup" aria-labelledby="f-term">
-          <button
-            v-for="n in TERMS"
-            :key="n"
-            type="button"
-            role="radio"
-            class="terms__item"
-            :class="{ 'is-active': Number(filters.days || 1) === n }"
-            :aria-checked="Number(filters.days || 1) === n"
-            @click="update('days', String(n))"
-          >
-            {{ t('filters.termDays', n) }}
-          </button>
-        </div>
-      </div>
+      <TermPicker id="f-term" v-model="term" class="filters__terms" :label="t('filters.term')" />
       <DateField
         id="f-start"
         :label="t('filters.start')"
         :min="today"
         :model-value="filters.start_date"
         @update:model-value="update('start_date', $event)"
-      />
-      <DateField
-        id="f-end"
-        :label="t('filters.end')"
-        :min="minEnd"
-        :model-value="filters.end_date"
-        @update:model-value="update('end_date', $event)"
       />
       <div class="field">
         <label class="field__label" for="f-category">{{ t('filters.category') }}</label>
@@ -111,7 +81,7 @@ const activeCount = computed(
         </select>
       </div>
       <div class="field filters__price">
-        <span class="field__label" id="f-price">{{ t('filters.price') }}</span>
+        <span id="f-price" class="field__label">{{ t('filters.price') }}</span>
         <div class="filters__range" role="group" aria-labelledby="f-price">
           <input
             class="input"
@@ -207,8 +177,9 @@ const activeCount = computed(
       padding: 0;
     }
 
+    // Под сроком — одна строка: дата, класс, цена, сортировка, сброс
     @include media(xl) {
-      grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr) minmax(0, 1fr) auto;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.4fr) minmax(0, 1fr) auto;
     }
 
     .field {
@@ -230,39 +201,6 @@ const activeCount = computed(
     display: flex;
     align-items: flex-end;
     padding-bottom: 12px;
-  }
-}
-
-.terms {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-
-  &__item {
-    min-height: 44px;
-    padding: 0 16px;
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    background: var(--color-surface-2);
-    color: var(--color-text);
-    font: inherit;
-    cursor: pointer;
-
-    @include motion {
-      transition:
-        border-color var(--duration-fast) var(--ease),
-        background-color var(--duration-fast) var(--ease);
-    }
-
-    @include hover {
-      border-color: var(--color-gold-dark);
-    }
-
-    &.is-active {
-      border-color: var(--color-gold);
-      background: var(--color-gold-alpha);
-      color: var(--color-gold);
-    }
   }
 }
 </style>

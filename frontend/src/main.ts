@@ -1,3 +1,4 @@
+import { inject as injectAnalytics } from '@vercel/analytics'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
@@ -20,3 +21,6 @@ app.use(PrimeVue, {
 })
 
 app.mount('#app')
+
+// Vercel Analytics: один раз на всё приложение, переходы SPA отслеживает сама
+injectAnalytics()
