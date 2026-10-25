@@ -2,6 +2,8 @@
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
+import ReviewsSection from '@/components/ReviewsSection.vue'
+
 const { t } = useI18n()
 
 const facts = [
@@ -41,6 +43,10 @@ const facts = [
       </li>
     </ul>
 
+    <div class="about__reviews">
+      <ReviewsSection />
+    </div>
+
     <div class="about__cta">
       <RouterLink :to="{ name: 'cars' }" class="btn btn--gold">{{ t('common.chooseCar') }}</RouterLink>
       <RouterLink :to="{ name: 'contacts' }" class="btn btn--outline">
@@ -59,6 +65,10 @@ const facts = [
     @include media(md) {
       grid-template-columns: 1fr 1fr;
     }
+  }
+
+  &__reviews {
+    margin-bottom: 48px;
   }
 
   &__cta {
