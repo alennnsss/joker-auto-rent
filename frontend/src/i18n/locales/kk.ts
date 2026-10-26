@@ -299,6 +299,13 @@ const kk: MessageSchema = {
     electric: 'Электр',
     gas: 'Газ',
   },
+  categories: {
+    economy: 'Эконом',
+    comfort: 'Комфорт',
+    business: 'Бизнес',
+    suv: 'SUV',
+    minivan: 'Минивэн',
+  },
   admin: {
     panel: 'әкімші панелі',
     toSite: 'Сайтқа',

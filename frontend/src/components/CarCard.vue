@@ -5,7 +5,7 @@ import { RouterLink } from 'vue-router'
 
 import type { Car } from '@/api/types'
 import CarPicture from '@/components/CarPicture.vue'
-import { formatPrice, fuelLabel, transmissionLabel } from '@/utils/format'
+import { categoryLabel, formatPrice, fuelLabel, transmissionLabel } from '@/utils/format'
 
 const props = withDefaults(
   defineProps<{
@@ -52,7 +52,7 @@ const specs = computed(() => [
           {{ title }}
         </RouterLink>
       </h3>
-      <p class="car-card__meta muted">{{ car.category.name }} · {{ car.year }}</p>
+      <p class="car-card__meta muted">{{ categoryLabel(car.category.name) }} · {{ car.year }}</p>
     </header>
 
     <RouterLink

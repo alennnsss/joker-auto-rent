@@ -115,5 +115,41 @@ const kkLocale: typeof ruLocale = {
   emptyMessage: 'Нұсқалар жоқ',
 }
 
+const enLocale: typeof ruLocale = {
+  firstDayOfWeek: 1,
+  dateFormat: 'dd.mm.yy',
+  dayNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  dayNamesShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  dayNamesMin: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+  monthNames: [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ],
+  monthNamesShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  today: 'Today',
+  clear: 'Clear',
+  weekHeader: 'Wk',
+  chooseDate: 'Choose date',
+  chooseMonth: 'Choose month',
+  chooseYear: 'Choose year',
+  prevMonth: 'Previous month',
+  nextMonth: 'Next month',
+  prevYear: 'Previous year',
+  nextYear: 'Next year',
+  prevDecade: 'Previous decade',
+  nextDecade: 'Next decade',
+  emptyMessage: 'No options',
+}
+
 // Локали календаря PrimeVue по языку сайта (переключаются в App.vue)
-export const primeLocales = { ru: ruLocale, kk: kkLocale }
+export const primeLocales = { ru: ruLocale, kk: kkLocale, en: enLocale }

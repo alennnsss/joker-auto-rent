@@ -7,6 +7,7 @@ import DateField from '@/components/DateField.vue'
 import TermPicker from '@/components/TermPicker.vue'
 import { clampTerm } from '@/config/terms'
 import { todayIso } from '@/utils/date'
+import { categoryLabel } from '@/utils/format'
 
 export interface FilterState {
   category_id: string
@@ -77,7 +78,7 @@ const activeCount = computed(
           @change="update('category_id', ($event.target as HTMLSelectElement).value)"
         >
           <option value="">{{ t('filters.allCategories') }}</option>
-          <option v-for="c in categories" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
+          <option v-for="c in categories" :key="c.id" :value="String(c.id)">{{ categoryLabel(c.name) }}</option>
         </select>
       </div>
       <div class="field filters__price">

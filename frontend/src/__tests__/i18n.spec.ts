@@ -5,9 +5,10 @@ import type { Car } from '@/api/types'
 import CarCard from '@/components/CarCard.vue'
 import { DELIVERY_PREFIX, OFFICE_LOCATION, locationLabel } from '@/config/locations'
 import { currentLocale, i18n, ruPluralIndex, setLocale } from '@/i18n'
+import en from '@/i18n/locales/en'
 import kk from '@/i18n/locales/kk'
 import ru from '@/i18n/locales/ru'
-import { bookingStatusLabel, formatDays } from '@/utils/format'
+import { bookingStatusLabel, categoryLabel, formatDays } from '@/utils/format'
 
 /** Все пути ключей словаря: «common.save», «benefits.prices.title», … */
 function keyPaths(messages: object, prefix = ''): string[] {
@@ -30,6 +31,15 @@ describe('dictionaries', () => {
 
   it('kk has no empty translations', () => {
     const empty = keyPaths(kk).filter((path) => !i18n.global.t(path, {}, { locale: 'kk' }).trim())
+    expect(empty).toEqual([])
+  })
+
+  it('en has exactly the same keys as ru', () => {
+    expect(keyPaths(en).sort()).toEqual(keyPaths(ru).sort())
+  })
+
+  it('en has no empty translations', () => {
+    const empty = keyPaths(en).filter((path) => !i18n.global.t(path, {}, { locale: 'en' }).trim())
     expect(empty).toEqual([])
   })
 })
@@ -56,6 +66,9 @@ describe('plurals', () => {
     expect(formatDays(3)).toBe('3 суток')
     setLocale('kk')
     expect(formatDays(3)).toBe('3 тәулік')
+    setLocale('en')
+    expect(formatDays(1)).toBe('1 day')
+    expect(formatDays(3)).toBe('3 days')
   })
 })
 
@@ -64,6 +77,14 @@ describe('labels for backend values', () => {
     expect(bookingStatusLabel('confirmed')).toBe('Подтверждена')
     setLocale('kk')
     expect(bookingStatusLabel('confirmed')).toBe('Расталды')
+  })
+
+  it('translates known car classes and keeps custom ones', () => {
+    expect(categoryLabel('Комфорт')).toBe('Комфорт')
+    setLocale('en')
+    expect(categoryLabel('Комфорт')).toBe('Comfort')
+    expect(categoryLabel('Минивэн')).toBe('Minivan')
+    expect(categoryLabel('Кабриолет')).toBe('Кабриолет')
   })
 
   it('translates stored locations without changing the stored value', () => {

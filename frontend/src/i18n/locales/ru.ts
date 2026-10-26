@@ -297,6 +297,14 @@ const ru = {
     electric: 'Электро',
     gas: 'Газ',
   },
+  // Классы авто: ключ — значение из БД (car_categories.name)
+  categories: {
+    economy: 'Эконом',
+    comfort: 'Комфорт',
+    business: 'Бизнес',
+    suv: 'SUV',
+    minivan: 'Минивэн',
+  },
   admin: {
     panel: 'админ-панель',
     toSite: 'На сайт',

@@ -16,7 +16,7 @@ import { whatsappMessageLink } from '@/config/contacts'
 import { isLocationValid, locationLabel, TIMES } from '@/config/locations'
 import { returnDate, useBookingStore } from '@/stores/booking'
 import { busyDays, todayIso } from '@/utils/date'
-import { formatDate, formatPrice, fuelLabel, transmissionLabel } from '@/utils/format'
+import { categoryLabel, formatDate, formatPrice, fuelLabel, transmissionLabel } from '@/utils/format'
 
 const props = defineProps<{ id: number }>()
 
@@ -69,7 +69,7 @@ const busy = computed(() => availability.value?.available === false)
 const specs = computed(() => {
   if (!car.value) return []
   return [
-    { label: t('carDetail.category'), value: car.value.category.name },
+    { label: t('carDetail.category'), value: categoryLabel(car.value.category.name) },
     { label: t('carDetail.year'), value: String(car.value.year) },
     { label: t('carDetail.transmission'), value: transmissionLabel(car.value.transmission) },
     { label: t('carDetail.fuel'), value: fuelLabel(car.value.fuel) },
@@ -160,7 +160,7 @@ function bookViaWhatsapp() {
 
         <aside class="booking card" aria-labelledby="booking-title">
           <h1 id="booking-title" class="booking__title">{{ title }}</h1>
-          <p class="booking__meta muted">{{ car.category.name }} · {{ car.year }}</p>
+          <p class="booking__meta muted">{{ categoryLabel(car.category.name) }} · {{ car.year }}</p>
           <p class="booking__price">
             <span class="text-gold">{{ formatPrice(car.price_per_day) }}</span>
             <span class="muted">&nbsp;{{ t('common.perDay') }}</span>

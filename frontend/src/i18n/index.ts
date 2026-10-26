@@ -1,5 +1,6 @@
 import { createI18n } from 'vue-i18n'
 
+import en from './locales/en'
 import kk from './locales/kk'
 import ru, { type MessageSchema } from './locales/ru'
 
@@ -9,10 +10,10 @@ declare module 'vue-i18n' {
   export interface DefineLocaleMessage extends MessageSchema {}
 }
 
-export const LOCALES = ['ru', 'kk'] as const
+export const LOCALES = ['ru', 'kk', 'en'] as const
 export type Locale = (typeof LOCALES)[number]
 
-export const LOCALE_LABELS: Record<Locale, string> = { ru: 'Рус', kk: 'Қаз' }
+export const LOCALE_LABELS: Record<Locale, string> = { ru: 'Рус', kk: 'Қаз', en: 'Eng' }
 
 const STORAGE_KEY = 'locale'
 
@@ -45,9 +46,10 @@ export const i18n = createI18n<[MessageSchema], Locale, false>({
   legacy: false,
   locale: savedLocale(),
   fallbackLocale: 'ru',
-  messages: { ru, kk },
+  messages: { ru, kk, en },
   // В казахском существительное после числа не меняется — всегда первая форма
-  pluralRules: { ru: ruPluralIndex, kk: () => 0 },
+  // В английском две формы: «1 day | 2 days»
+  pluralRules: { ru: ruPluralIndex, kk: () => 0, en: (n) => (Math.abs(n) === 1 ? 0 : 1) },
 })
 
 export function currentLocale(): Locale {

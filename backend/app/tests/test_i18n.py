@@ -50,7 +50,8 @@ def test_parse_lang() -> None:
     assert parse_lang("kk") == "kk"
     assert parse_lang("kk-KZ,ru;q=0.8") == "kk"
     assert parse_lang("ru") == "ru"
-    assert parse_lang("en-US") == "ru"
+    assert parse_lang("en-US") == "en"
+    assert parse_lang("de") == "ru"
     assert parse_lang(None) == "ru"
 
 
@@ -77,3 +78,18 @@ async def test_validation_error_in_kazakh(client: AsyncClient) -> None:
     )
     assert response.status_code == 422
     assert response.json()["detail"] == "«password» өрісі: міндетті өріс"
+
+
+async def test_api_error_in_english(client: AsyncClient) -> None:
+    body = {"email": "nobody@example.com", "password": "wrongpass1"}
+    response = await client.post("/api/v1/auth/login", json=body, headers={"Accept-Language": "en"})
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid email or password"
+
+
+async def test_validation_error_in_english(client: AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/auth/login", json={"email": "a@b.kz"}, headers={"Accept-Language": "en-US"}
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Field “password”: required field"

@@ -58,3 +58,18 @@ export const BOOKING_STATUSES: BookingStatus[] = [
 export const transmissionLabel = (value: Transmission) => t(`transmission.${value}`)
 export const fuelLabel = (value: Fuel) => t(`fuel.${value}`)
 export const bookingStatusLabel = (value: BookingStatus) => t(`status.booking.${value}`)
+
+// Классы хранятся в БД по-русски (их создаёт админ); известные переводим по ключу
+const CATEGORY_KEYS: Record<string, string> = {
+  Эконом: 'economy',
+  Комфорт: 'comfort',
+  Бизнес: 'business',
+  SUV: 'suv',
+  Минивэн: 'minivan',
+}
+
+/** «Комфорт» → «Comfort» на английском; новый класс из админки — как есть. */
+export function categoryLabel(name: string): string {
+  const key = CATEGORY_KEYS[name.trim()]
+  return key ? t(`categories.${key}`) : name
+}
