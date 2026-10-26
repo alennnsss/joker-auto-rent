@@ -2,7 +2,9 @@
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
+import GeozoneMap from '@/components/GeozoneMap.vue'
 import { whatsappLink } from '@/config/contacts'
+import { GEOZONE_POINTS } from '@/config/geozone'
 
 const { t } = useI18n()
 
@@ -46,7 +48,10 @@ const FORBIDDEN_ITEMS = 3
 const ICON_FORBIDDEN = 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM4.9 4.9l14.2 14.2'
 const ICON_CHECK = 'M20 6 9 17l-5-5'
 const ICON_CROSS = 'M18 6 6 18M6 6l12 12'
-const ICON_INFO = 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01'
+const ICON_PIN =
+  'M12 22s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12zm0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'
+const ICON_MAP ='M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14'
+const ICON_INFO ='M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01'
 </script>
 
 <template>
@@ -97,6 +102,41 @@ const ICON_INFO = 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01'
         </ul>
       </section>
     </div>
+
+    <section class="geozone" aria-labelledby="geozone-title">
+      <div class="geozone__info">
+        <header class="rule-card__head">
+          <span class="rule-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path :d="ICON_MAP" />
+            </svg>
+          </span>
+          <h2 id="geozone-title" class="rule-card__title">{{ t('rules.geozone.title') }}</h2>
+        </header>
+        <p class="geozone__lead">{{ t('rules.geozone.lead') }}</p>
+
+        <h3 class="geozone__subtitle">{{ t('rules.geozone.bordersTitle') }}</h3>
+        <ol class="geozone__points">
+          <li v-for="p in GEOZONE_POINTS" :key="p.key" class="geozone__point">
+            <span class="geozone__pin" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path :d="ICON_PIN" />
+              </svg>
+            </span>
+            {{ t(`rules.geozone.points.${p.key}`) }}
+          </li>
+        </ol>
+
+        <ul class="geozone__legend">
+          <li class="geozone__tag geozone__tag--free">{{ t('rules.geozone.free') }}</li>
+          <li class="geozone__tag geozone__tag--paid">{{ t('rules.geozone.paid') }}</li>
+        </ul>
+      </div>
+
+      <div class="geozone__map">
+        <GeozoneMap />
+      </div>
+    </section>
 
     <p class="rules__note">
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -161,6 +201,128 @@ svg {
     flex-wrap: wrap;
     gap: 12px;
     margin-top: 20px;
+  }
+}
+
+.geozone {
+  @include card;
+  display: grid;
+  margin-top: 20px;
+  overflow: hidden;
+
+  @include media(lg) {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+
+    @include media(md) {
+      padding: 24px;
+    }
+  }
+
+  &__lead {
+    margin: 0;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+  }
+
+  &__subtitle {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+  }
+
+  &__points {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    @include media(sm) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  &__point {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+    font-weight: 600;
+  }
+
+  &__pin {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gradient-gold);
+    color: var(--color-on-gold);
+
+    svg {
+      stroke-width: 2.2;
+    }
+  }
+
+  &__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: auto 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+
+    &::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    &--free {
+      background: var(--color-success-alpha);
+      color: var(--color-success);
+    }
+
+    &--paid {
+      background: var(--color-gold-alpha);
+      color: var(--color-gold);
+    }
+  }
+
+  &__map {
+    min-height: 320px;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+
+    @include media(lg) {
+      min-height: 440px;
+      border-top: 0;
+      border-left: 1px solid var(--color-border);
+    }
   }
 }
 
